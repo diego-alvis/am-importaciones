@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -12,6 +13,7 @@ class Sale extends Model
     protected $fillable = [
         'cash_session_id',
         'user_id',
+        'operator_name',
         'customer_id',
         'total_amount',
         'status',
@@ -44,5 +46,59 @@ class Sale extends Model
     public function payments()
     {
         return $this->hasMany(SalePayment::class);
+    }
+
+    public function getSellerNameAttribute(): string
+    {
+        return $this->operator_name ?: ($this->user?->name ?? 'Vendedor');
+    }
+
+    /**
+     * Aplica el ámbito de visibilidad de ventas según el rol del usuario autenticado.
+     */
+    public function scopeForUserScope(
+        Builder $query,
+        User $user,
+        ?string $standId = null,
+        ?string $locationId = null,
+        ?string $userId = null,
+        ?string $scope = null
+    ): Builder {
+        if ($user->isVendedor()) {
+            $activeStand = $user->getActiveStand();
+            if ($activeStand) {
+                return $query->whereHas('cashSession', fn ($q) => $q->where('stand_id', $activeStand->id));
+            }
+
+            return $query->where('user_id', $user->id);
+        }
+
+        if ($user->isEncargado()) {
+            $query->whereHas('cashSession.stand', fn ($q) => $q->where('location_id', $user->location_id));
+
+            if ($scope === 'personal') {
+                $query->where('user_id', $user->id);
+            } elseif (! empty($userId)) {
+                $query->where('user_id', $userId);
+            }
+
+            if (! empty($standId)) {
+                $query->whereHas('cashSession', fn ($q) => $q->where('stand_id', $standId));
+            }
+
+            return $query;
+        }
+
+        if (! empty($locationId)) {
+            $query->whereHas('cashSession.stand', fn ($q) => $q->where('location_id', $locationId));
+        }
+        if (! empty($standId)) {
+            $query->whereHas('cashSession', fn ($q) => $q->where('stand_id', $standId));
+        }
+        if (! empty($userId)) {
+            $query->where('user_id', $userId);
+        }
+
+        return $query;
     }
 }

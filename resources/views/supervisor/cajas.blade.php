@@ -53,10 +53,10 @@
                                     <h4 class="text-xl font-black text-slate-900 leading-tight">{{ $caja->stand?->name ?? 'Punto de Venta' }}</h4>
                                     <div class="mt-4 flex items-center gap-3">
                                         <div class="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-xs shadow-sm">
-                                            {{ substr($caja->user?->name ?? 'U', 0, 1) }}
+                                            {{ substr($caja->cashier_name ?? 'U', 0, 1) }}
                                         </div>
                                         <div>
-                                            <p class="text-sm font-bold text-slate-800">{{ $caja->user?->name ?? 'Vendedor no asignado' }}</p>
+                                            <p class="text-sm font-bold text-slate-800">{{ $caja->cashier_name }}</p>
                                             <p class="text-xs text-slate-500">Cierre: {{ $caja->closing_time ? \Carbon\Carbon::parse($caja->closing_time)->format('d/m h:i A') : '--:--' }}</p>
                                         </div>
                                     </div>
@@ -154,7 +154,7 @@
                                             <span class="font-extrabold text-slate-900 block">{{ $aprobada->stand?->name ?? 'Tienda' }}</span>
                                             <span class="text-xs text-slate-400">{{ $aprobada->stand?->location?->name ?? 'Sede' }}</span>
                                         </td>
-                                        <td class="px-5 py-3 font-medium text-slate-800">{{ $aprobada->user?->name ?? 'Vendedor' }}</td>
+                                        <td class="px-5 py-3 font-medium text-slate-800">{{ $aprobada->cashier_name }}</td>
                                         <td class="px-5 py-3 text-xs text-slate-600">
                                             <span class="font-bold text-emerald-700">{{ $aprobada->approver?->name ?? 'Admin' }}</span>
                                             <span class="block text-slate-400 text-[10px]">{{ $aprobada->closing_time ? $aprobada->closing_time->format('d/m/Y h:i A') : '' }}</span>

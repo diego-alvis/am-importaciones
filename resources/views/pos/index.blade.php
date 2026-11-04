@@ -15,7 +15,7 @@
 
                 <!-- Botón de Cambiar Tienda -->
                 @if($availableStands->count() > 1)
-                <button type="button" @click="$dispatch('open-change-stand-modal')" class="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+                <button type="button" @click="$dispatch('open-change-stand-modal')" onclick="window.dispatchEvent(new CustomEvent('open-change-stand-modal'))" class="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
                     <span>Cambiar Tienda</span>
                 </button>
@@ -76,7 +76,7 @@
                                  id: {{ $product->id }}, 
                                  name: '{{ addslashes($product->name) }}', 
                                  price: {{ (float) $product->base_price }}, 
-                                 requires_device_model: {{ $product->requires_device_model ? 'true' : 'false' }} 
+                                 requires_device_model: {{ $product->requiresDeviceModel() ? 'true' : 'false' }} 
                              })"
                              class="border border-slate-200 rounded-xl p-3 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer bg-white flex flex-col justify-between group">
                             <div>
@@ -197,6 +197,10 @@
                             <label class="block text-xs font-bold text-slate-700 mb-1">Yape / Plin / Tarjeta (S/)</label>
                             <input type="number" step="0.10" x-model.number="payTransfer" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-black text-lg text-slate-800" placeholder="0.00">
                         </div>
+                        <div x-show="payTransfer > 0">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">N° Operación / Voucher (Opcional)</label>
+                            <input type="text" x-model="referenceCode" class="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm font-mono text-slate-800 focus:ring-2 focus:ring-blue-500" placeholder="Ej. OP-489123">
+                        </div>
                     </div>
 
                     <div class="flex justify-between items-center p-4 rounded-xl border" :class="change >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'">
@@ -254,7 +258,7 @@
                         @csrf
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre del Vendedor / Operador</label>
-                            <input type="text" name="operator_name" value="{{ auth()->user()->name }}" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-bold">
+                            <input type="text" name="operator_name" value="{{ auth()->user()->display_name }}" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-bold">
                         </div>
 
                         <div>
@@ -291,6 +295,7 @@
             lastSaleTotal: 0,
             payCash: 0,
             payTransfer: 0,
+            referenceCode: '',
 
             get total() {
                 return this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -339,6 +344,13 @@
             },
 
             async submitToServer(method, cash, transfer, changeValue) {
+                for (const item of this.cart) {
+                    if (item.requires_device_model && (!item.device_model || item.device_model.trim() === '')) {
+                        alert(`Por favor ingresa el modelo de celular para '${item.name}' antes de continuar.`);
+                        return;
+                    }
+                }
+
                 try {
                     const response = await fetch('{{ route('pos.store') }}', {
                         method: 'POST',
@@ -352,7 +364,8 @@
                             payment_method: method,
                             cash_tendered: cash,
                             transfer_tendered: transfer,
-                            change: changeValue
+                            change: changeValue,
+                            reference_code: this.referenceCode
                         })
                     });
 
@@ -364,6 +377,7 @@
                         this.cart = [];
                         this.payCash = 0;
                         this.payTransfer = 0;
+                        this.referenceCode = '';
                         this.showConfirmation = true; // Confirmación sin imprimir automáticamente
                     } else {
                         alert('Error: ' + data.error);

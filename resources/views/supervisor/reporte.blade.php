@@ -20,9 +20,15 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                     Imprimir Reporte
                 </button>
-                <a href="{{ route('supervisor.cajas') }}" class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-sm border border-slate-200 transition-all">
-                    &larr; Volver a Supervisión
-                </a>
+                @if(auth()->user()->isAdmin() || auth()->user()->isEncargado())
+                    <a href="{{ route('supervisor.cajas') }}" class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-sm border border-slate-200 transition-all">
+                        &larr; Volver a Supervisión
+                    </a>
+                @else
+                    <a href="{{ route('cash.index') }}" class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-sm border border-slate-200 transition-all">
+                        &larr; Volver a Caja
+                    </a>
+                @endif
             </div>
         </div>
     </x-slot>
@@ -66,7 +72,7 @@
                     </div>
                     <div>
                         <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Cajero / Vendedor</span>
-                        <span class="font-bold text-slate-800">{{ $caja->user?->name ?? 'Vendedor' }}</span>
+                        <span class="font-bold text-slate-800">{{ $caja->cashier_name }}</span>
                     </div>
                     <div>
                         <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Supervisor Aprobador</span>
@@ -280,7 +286,7 @@
             <div class="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm print-card pt-12 mt-8">
                 <div class="grid grid-cols-2 gap-12 text-center">
                     <div class="border-t border-slate-400 pt-3">
-                        <p class="font-bold text-slate-800 text-sm">{{ $caja->user?->name ?? 'Cajero / Vendedor' }}</p>
+                        <p class="font-bold text-slate-800 text-sm">{{ $caja->cashier_name }}</p>
                         <p class="text-xs text-slate-500">Firma del Vendedor (Entrega de Caja)</p>
                     </div>
                     <div class="border-t border-slate-400 pt-3">

@@ -28,13 +28,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if ($request->filled('operator_name')) {
-            $operatorName = trim($request->input('operator_name'));
-            $request->session()->put('operator_name', $operatorName);
-            Auth::user()->update(['name' => $operatorName]);
-        }
-
-        return redirect()->intended(route('pos.index', absolute: false));
+        return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**

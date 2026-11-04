@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentMethod;
+use App\Enums\SaleStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class CashSession extends Model
@@ -9,6 +11,7 @@ class CashSession extends Model
     protected $fillable = [
         'user_id',
         'stand_id',
+        'operator_name',
         'opening_time',
         'closing_time',
         'expected_cash',
@@ -49,12 +52,17 @@ class CashSession extends Model
         return $this->hasMany(Sale::class);
     }
 
+    public function getCashierNameAttribute(): string
+    {
+        return $this->operator_name ?: ($this->user?->name ?? 'Sin cajero');
+    }
+
     /**
      * Calcula las métricas financieras y de auditoría de la sesión de caja.
      */
     public function getMetrics(): object
     {
-        $sales = $this->sales->where('status', 'completada');
+        $sales = $this->sales->where('status', SaleStatus::Completada->value);
         $totalVentas = (float) $sales->sum('total_amount');
         $totalEfectivo = 0.0;
         $totalYapePlin = 0.0;
@@ -63,11 +71,11 @@ class CashSession extends Model
         foreach ($sales as $sale) {
             foreach ($sale->payments as $payment) {
                 $amount = (float) $payment->amount;
-                if ($payment->payment_method === 'efectivo') {
+                if ($payment->payment_method === PaymentMethod::Efectivo->value) {
                     $totalEfectivo += $amount;
-                } elseif (in_array($payment->payment_method, ['yape', 'plin'], true)) {
+                } elseif (in_array($payment->payment_method, [PaymentMethod::Yape->value, PaymentMethod::Plin->value], true)) {
                     $totalYapePlin += $amount;
-                } elseif ($payment->payment_method === 'tarjeta') {
+                } elseif ($payment->payment_method === PaymentMethod::Tarjeta->value) {
                     $totalTarjeta += $amount;
                 }
             }
@@ -79,8 +87,8 @@ class CashSession extends Model
 
         $bonoMeta = $metaComision > 0 ? floor($totalVentas / $metaComision) * $bonoComision : 0.0;
         $gastosTotales = $viaticoFijo + $bonoMeta;
-        $efectivoEsperado = $totalEfectivo - $gastosTotales;
-        $diferencia = ((float) $this->declared_cash) - $efectivoEsperado;
+        $efectivoEsperado = max(0, $totalEfectivo - $gastosTotales);
+        $diferencia = $this->declared_cash !== null ? (((float) $this->declared_cash) - $efectivoEsperado) : 0.0;
 
         return (object) [
             'total_ventas' => $totalVentas,
@@ -100,14 +108,14 @@ class CashSession extends Model
      */
     public function getItemsSummary(): array
     {
-        $sales = $this->sales()->where('status', 'completada')->with(['items.product', 'payments'])->get();
+        $sales = $this->sales()->where('status', SaleStatus::Completada->value)->with(['items.product', 'payments'])->get();
         $summary = [];
 
         foreach ($sales as $sale) {
-            $paymentMethods = $sale->payments->pluck('payment_method')->map(fn($m) => ucfirst($m))->implode(', ');
+            $paymentMethods = $sale->payments->pluck('payment_method')->map(fn ($m) => ucfirst($m))->implode(', ');
             foreach ($sale->items as $item) {
-                $key = $item->product_id . '_' . ($item->device_model ?? '');
-                if (!isset($summary[$key])) {
+                $key = $item->product_id.'_'.($item->device_model ?? '');
+                if (! isset($summary[$key])) {
                     $summary[$key] = [
                         'sku' => $item->product->sku ?? '',
                         'name' => $item->product->name ?? 'Producto',
@@ -120,7 +128,7 @@ class CashSession extends Model
                 }
                 $summary[$key]['quantity'] += (int) $item->quantity;
                 $summary[$key]['total'] += ((int) $item->quantity * (float) $item->unit_price);
-                if ($paymentMethods && !in_array($paymentMethods, $summary[$key]['payment_methods'], true)) {
+                if ($paymentMethods && ! in_array($paymentMethods, $summary[$key]['payment_methods'], true)) {
                     $summary[$key]['payment_methods'][] = $paymentMethods;
                 }
             }

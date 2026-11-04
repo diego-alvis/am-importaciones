@@ -24,18 +24,6 @@
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        <!-- Nombre del Vendedor / Operador de Turno -->
-        <div class="mt-4">
-            <x-input-label for="operator_name" :value="__('Tu Nombre (Vendedor / Operador de Turno)')" />
-            <x-text-input id="operator_name" class="block mt-1 w-full"
-                            type="text"
-                            name="operator_name"
-                            :value="old('operator_name')"
-                            placeholder="Ej. Juan Pérez"
-                            autocomplete="name" />
-            <span class="text-xs text-slate-500 mt-1 block">El nombre que ingreses figurará en las ventas y arqueos de caja del turno.</span>
-        </div>
-
         <!-- Remember Me -->
         <div class="block mt-4">
             <label for="remember_me" class="inline-flex items-center">

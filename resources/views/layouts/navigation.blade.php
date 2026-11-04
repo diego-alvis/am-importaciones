@@ -1,62 +1,64 @@
 <nav x-data="{ open: false, showStoreModal: false }" class="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-xs">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
+        <div class="flex justify-between items-center h-16 gap-3">
+            <div class="flex items-center min-w-0 gap-3 xl:gap-6">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
-                        <x-application-logo class="block h-9 w-auto fill-current text-blue-600" />
-                        <span class="font-black text-slate-800 text-lg hidden md:inline tracking-tight">A&M <span class="text-blue-600">IMPORTACIONES</span></span>
+                        <x-application-logo class="block h-9 w-auto fill-current text-blue-600 shrink-0" />
+                        <span class="font-black text-slate-800 text-lg hidden sm:inline tracking-tight whitespace-nowrap">A&M <span class="text-blue-600">IMPORTACIONES</span></span>
                     </a>
                 </div>
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-5 sm:-my-px sm:ms-8 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                <!-- Navigation Links según Rol -->
+                <div class="hidden lg:flex items-center gap-1 xl:gap-3.5 h-16 min-w-0">
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     
                     @if(auth()->check() && !auth()->user()->isAlmacen())
-                        <x-nav-link :href="route('pos.index')" :active="request()->routeIs('pos.*')">
+                        <x-nav-link :href="route('pos.index')" :active="request()->routeIs('pos.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
                             {{ __('POS') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('cash.index')" :active="request()->routeIs('cash.*')">
+                        <x-nav-link :href="route('cash.index')" :active="request()->routeIs('cash.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
                             {{ __('Caja') }}
                         </x-nav-link>
                     @endif
 
                     @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'encargado']))
-                        <x-nav-link :href="route('supervisor.cajas')" :active="request()->routeIs('supervisor.*')">
+                        <x-nav-link :href="route('supervisor.cajas')" :active="request()->routeIs('supervisor.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
                             {{ __('Supervisión') }}
                         </x-nav-link>
                     @endif
 
-                    <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
+                    <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
                         {{ __('Inventario') }}
                     </x-nav-link>
 
-                    @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'encargado']))
-                        <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
+                    @if (auth()->check() && auth()->user()->role === 'admin')
+                        <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
                             {{ __('Categorías') }}
                         </x-nav-link>
                     @endif
 
-                    @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'almacenero', 'encargado']))
-                        <x-nav-link :href="route('transfers.index')" :active="request()->routeIs('transfers.*')">
+                    @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'almacenero', 'encargado', 'vendedor']))
+                        <x-nav-link :href="route('transfers.index')" :active="request()->routeIs('transfers.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
                             {{ __('Transferencias') }}
                         </x-nav-link>
                     @endif
 
-                    <x-nav-link :href="route('history.index')" :active="request()->routeIs('history.*')">
-                        {{ __('Historial') }}
-                    </x-nav-link>
+                    @if (auth()->check() && !auth()->user()->isAlmacen())
+                        <x-nav-link :href="route('history.index')" :active="request()->routeIs('history.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
+                            {{ __('Historial') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
             <!-- Settings & Store Selector -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6 gap-3">
+            <div class="hidden sm:flex items-center gap-2 xl:gap-3 shrink-0">
                 
                 @if(auth()->check())
                     @php
@@ -67,28 +69,28 @@
 
                     @if(!$currentUser->isAlmacen() && $availableStands->count() > 0)
                         <!-- Selector Rápido de Tienda Activa -->
-                        <button type="button" @click="showStoreModal = true" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition-colors">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span>{{ $activeStand?->name ?? 'Elegir Tienda' }}</span>
-                            <span class="text-blue-400 font-normal">({{ $activeStand?->location?->name ?? $currentUser->location?->name }})</span>
-                            <svg class="w-3.5 h-3.5 text-blue-500 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <button type="button" @click="showStoreModal = true" class="inline-flex items-center gap-1.5 xl:gap-2 px-2.5 xl:px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition-colors shrink-0 whitespace-nowrap">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                            <span class="truncate max-w-[130px] xl:max-w-none">{{ $activeStand?->name ?? 'Elegir Tienda' }}</span>
+                            <span class="text-blue-400 font-normal hidden xl:inline">({{ $activeStand?->location?->name ?? $currentUser->location?->name }})</span>
+                            <svg class="w-3.5 h-3.5 text-blue-500 ml-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
                     @elseif($currentUser->isAlmacen())
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
-                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                            Almacén Central (Solo Distribución)
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 shrink-0 whitespace-nowrap">
+                            <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            Almacén Central (Distribución)
                         </span>
                     @endif
 
-                    <div class="text-right">
-                        <p class="text-xs font-bold text-slate-800 leading-none">{{ $currentUser->name }}</p>
+                    <div class="text-right hidden sm:block shrink-0">
+                        <p class="text-xs font-bold text-slate-800 leading-none truncate max-w-[100px] xl:max-w-[150px]">{{ $currentUser->display_name }}</p>
                         <span class="text-[10px] text-blue-600 font-extrabold uppercase">{{ $currentUser->role }}</span>
                     </div>
 
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
-                            <button class="inline-flex items-center p-2 border border-slate-200 rounded-full text-slate-600 bg-slate-50 hover:bg-slate-100 focus:outline-none transition ease-in-out duration-150">
-                                <span class="font-bold text-xs">{{ substr($currentUser->name ?? 'U', 0, 1) }}</span>
+                            <button class="inline-flex items-center p-2 border border-slate-200 rounded-full text-slate-600 bg-slate-50 hover:bg-slate-100 focus:outline-none transition ease-in-out duration-150 shrink-0">
+                                <span class="font-bold text-xs">{{ substr($currentUser->display_name ?? 'U', 0, 1) }}</span>
                             </button>
                         </x-slot>
 
@@ -118,7 +120,7 @@
             </div>
 
             <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
+            <div class="-me-2 flex items-center lg:hidden">
                 <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -130,7 +132,7 @@
     </div>
 
     <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-white border-t border-slate-100">
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden lg:hidden bg-white border-t border-slate-100">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
@@ -156,27 +158,29 @@
                 {{ __('Inventario') }}
             </x-responsive-nav-link>
 
-            @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'encargado']))
+            @if (auth()->check() && auth()->user()->role === 'admin')
                 <x-responsive-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
                     {{ __('Categorías') }}
                 </x-responsive-nav-link>
             @endif
 
-            @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'almacenero', 'encargado']))
+            @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'almacenero', 'encargado', 'vendedor']))
                 <x-responsive-nav-link :href="route('transfers.index')" :active="request()->routeIs('transfers.*')">
                     {{ __('Transferencias') }}
                 </x-responsive-nav-link>
             @endif
 
-            <x-responsive-nav-link :href="route('history.index')" :active="request()->routeIs('history.*')">
-                {{ __('Historial') }}
-            </x-responsive-nav-link>
+            @if (auth()->check() && !auth()->user()->isAlmacen())
+                <x-responsive-nav-link :href="route('history.index')" :active="request()->routeIs('history.*')">
+                    {{ __('Historial') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-2 border-t border-gray-200 bg-slate-50">
             <div class="px-4">
-                <div class="font-bold text-base text-gray-800">{{ Auth::user()->name }}</div>
+                <div class="font-bold text-base text-gray-800">{{ Auth::user()->display_name }}</div>
                 <div class="text-xs text-slate-500">{{ Auth::user()->email }} ({{ Auth::user()->role }})</div>
                 @if(!Auth::user()->isAlmacen() && Auth::user()->getActiveStand())
                     <button type="button" @click="showStoreModal = true; open = false" class="mt-2 text-xs font-bold text-blue-600 block">
@@ -220,9 +224,9 @@
                     <div class="p-6 space-y-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nombre del Vendedor / Operador</label>
-                            <input type="text" name="operator_name" value="{{ Auth::user()->name }}" required
+                            <input type="text" name="operator_name" value="{{ Auth::user()->display_name }}" required
                                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
-                            <span class="text-[11px] text-slate-400 block mt-1">Nombre que figurará en el comprobante y arqueo.</span>
+                            <span class="text-[11px] text-slate-400 block mt-1">Nombre que figurará en el comprobante y arqueo del turno.</span>
                         </div>
 
                         <div>

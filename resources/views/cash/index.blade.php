@@ -46,7 +46,7 @@
                                 
                                 <div>
                                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tu Nombre y Apellido (Vendedor de Turno)</label>
-                                    <input type="text" name="operator_name" value="{{ session('operator_name', auth()->user()->name) }}" required
+                                    <input type="text" name="operator_name" value="{{ session('operator_name') }}" required
                                         placeholder="Ej. Juan Pérez"
                                         class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-bold text-slate-800 text-sm">
                                 </div>

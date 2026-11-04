@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Category\DeleteCategoryAction;
+use App\Http\Requests\Category\StoreCategoryRequest;
+use App\Http\Requests\Category\UpdateCategoryRequest;
 use App\Models\Category;
+use DomainException;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
@@ -18,44 +21,37 @@ class CategoryController extends Controller
         return view('categories.index', compact('categories'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreCategoryRequest $request): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:100|unique:categories,name',
-        ]);
-
         Category::create([
-            'name' => trim($request->name),
+            'name' => trim($request->validated('name')),
         ]);
 
         return redirect()->route('categories.index')->with('success', 'Categoría creada exitosamente.');
     }
 
-    public function update(Request $request, int|string $id): RedirectResponse
+    public function update(UpdateCategoryRequest $request, int|string $id): RedirectResponse
     {
         $category = Category::findOrFail($id);
 
-        $request->validate([
-            'name' => 'required|string|max:100|unique:categories,name,' . $category->id,
-        ]);
-
         $category->update([
-            'name' => trim($request->name),
+            'name' => trim($request->validated('name')),
         ]);
 
         return redirect()->route('categories.index')->with('success', 'Categoría actualizada correctamente.');
     }
 
-    public function destroy(int|string $id): RedirectResponse
+    public function destroy(int|string $id, DeleteCategoryAction $deleteCategoryAction): RedirectResponse
     {
-        $category = Category::withCount('products')->findOrFail($id);
+        $category = Category::findOrFail($id);
+        $this->authorize('delete', $category);
 
-        if ($category->products_count > 0) {
-            return redirect()->route('categories.index')->with('error', "No se puede eliminar la categoría '{$category->name}' porque contiene {$category->products_count} producto(s) asignado(s).");
+        try {
+            $deleteCategoryAction->execute($id);
+
+            return redirect()->route('categories.index')->with('success', 'Categoría eliminada exitosamente.');
+        } catch (DomainException $e) {
+            return redirect()->route('categories.index')->with('error', $e->getMessage());
         }
-
-        $category->delete();
-
-        return redirect()->route('categories.index')->with('success', 'Categoría eliminada exitosamente.');
     }
 }

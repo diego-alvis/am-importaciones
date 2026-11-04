@@ -31,12 +31,11 @@
         </div>
 
         <div class="text-center mb-4">
-            <h2 class="font-bold">A Y M IMPORTACIONES</h2>
-            <p>Sede: {{ $sale->cashSession->stand->name ?? 'Principal' }}</p>
-            <p>RUC: 20000000000</p>
+            <h2 class="font-bold">A&M IMPORTACIONES</h2>
+            <p>{{ $sale->cashSession?->stand?->location?->name ?? 'Central' }} &bull; {{ $sale->cashSession?->stand?->name ?? 'Tienda' }}</p>
             <p>Ticket: #{{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</p>
             <p>Fecha: {{ $sale->created_at->format('d/m/Y H:i:s') }}</p>
-            <p>Atendido por: {{ $sale->user->name }}</p>
+            <p>Atendido por: {{ $sale->seller_name }}</p>
         </div>
 
         <div class="divider"></div>
@@ -95,12 +94,11 @@
         
         <div class="divider"></div>
         <div class="text-center">
-            <p style="font-size: 10px;">Sistema POS desarrollado por Diego</p>
+            <p style="font-size: 10px; color: #666;">Documento de control interno</p>
         </div>
     </div>
     
     <script>
-        // Imprime automáticamente al cargar la ventana
         window.onload = function() { window.print(); }
     </script>
 </body>

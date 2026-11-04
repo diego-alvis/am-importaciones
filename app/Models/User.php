@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\CashSessionStatus;
+use App\Enums\LocationType;
+use App\Enums\UserRole;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -43,29 +47,73 @@ class User extends Authenticatable
         return $this->belongsTo(Stand::class);
     }
 
+    public function cashSessions()
+    {
+        return $this->hasMany(CashSession::class);
+    }
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class);
+    }
+
+    public function getActiveCashSession(): ?CashSession
+    {
+        return $this->cashSessions()
+            ->with(['stand.location'])
+            ->where('status', CashSessionStatus::Abierta)
+            ->first();
+    }
+
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === UserRole::Admin->value;
     }
 
     public function isEncargado(): bool
     {
-        return $this->role === 'encargado';
+        return $this->role === UserRole::Encargado->value;
     }
 
     public function isVendedor(): bool
     {
-        return $this->role === 'vendedor';
+        return $this->role === UserRole::Vendedor->value;
     }
 
     public function isAlmacenero(): bool
     {
-        return $this->role === 'almacenero';
+        return $this->role === UserRole::Almacenero->value;
     }
 
     public function isAlmacen(): bool
     {
-        return $this->role === 'almacenero' || ($this->location && $this->location->type === 'almacen');
+        if ($this->isAdmin()) {
+            return false;
+        }
+
+        if ($this->role === UserRole::Almacenero->value) {
+            return true;
+        }
+
+        if (! $this->location_id) {
+            return false;
+        }
+
+        return $this->location && $this->location->type === LocationType::Almacen->value;
+    }
+
+    public function getDisplayNameAttribute(): string
+    {
+        if ($this->isVendedor()) {
+            $activeSession = $this->getActiveCashSession();
+            if ($activeSession && ! empty($activeSession->operator_name)) {
+                return $activeSession->operator_name;
+            }
+
+            return session('operator_name', $this->name);
+        }
+
+        return $this->name;
     }
 
     public function getActiveStand(): ?Stand
@@ -77,10 +125,11 @@ class User extends Authenticatable
                 return $stand;
             }
         }
+
         return $this->stand;
     }
 
-    public function getAvailableStands(): \Illuminate\Database\Eloquent\Collection
+    public function getAvailableStands(): Collection
     {
         if ($this->isAdmin()) {
             return Stand::with('location')->orderBy('location_id')->orderBy('name')->get();
@@ -88,6 +137,7 @@ class User extends Authenticatable
         if ($this->location_id) {
             return Stand::with('location')->where('location_id', $this->location_id)->orderBy('name')->get();
         }
-        return Stand::none();
+
+        return new Collection;
     }
 }

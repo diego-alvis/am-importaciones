@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('quantity')->default(0);
             $table->integer('min_stock')->default(5);
             $table->timestamps();
-            
+
             $table->unique(['location_id', 'product_id']);
         });
     }

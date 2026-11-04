@@ -9,14 +9,14 @@
                 <p class="text-sm text-slate-500 mt-0.5">Organización y clasificación del catálogo general</p>
             </div>
 
-            <button @click="$dispatch('open-create-category-modal')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm text-sm flex items-center gap-2 transition-all">
+            <button type="button" @click="$dispatch('open-create-category-modal')" onclick="window.dispatchEvent(new CustomEvent('open-create-category-modal'))" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm text-sm flex items-center gap-2 transition-all cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 <span>Nueva Categoría</span>
             </button>
         </div>
     </x-slot>
 
-    <div class="py-8" x-data="categoryManager()">
+    <div class="py-8" x-data="categoryManager()" @open-create-category-modal.window="showCreate = true">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             
             <!-- Listado de Categorías -->

@@ -109,8 +109,8 @@
                                     <option value="personal" {{ $scope === 'personal' ? 'selected' : '' }}>Solo mis ventas personales</option>
                                 </select>
                             </div>
-                        @else
-                            <!-- Vendedor -->
+                        @elseif(auth()->user()->isAdmin())
+                            <!-- Filtro Vendedor (Solo Admin) -->
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Vendedor</label>
                                 <select name="user_id" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold focus:ring-2 focus:ring-blue-500 bg-white">
@@ -201,7 +201,7 @@
                                     <span class="text-[10px] text-slate-400">{{ $sale->cashSession?->stand?->location?->name ?? 'Sede' }}</span>
                                 </td>
                                 <td class="py-3 px-4 text-xs font-semibold text-slate-800">
-                                    {{ $sale->user->name ?? 'Vendedor' }}
+                                    {{ $sale->seller_name }}
                                 </td>
                                 <td class="py-3 px-4">
                                     <span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-slate-100 text-slate-700 uppercase">
@@ -229,13 +229,17 @@
                                         </a>
 
                                         @if($sale->status === 'completada' && in_array(auth()->user()->role, ['admin', 'encargado']))
-                                        <!-- Anular Venta -->
-                                        <form action="{{ route('history.cancel', $sale->id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas anular esta venta y devolver el stock?')">
-                                            @csrf
-                                            <button type="submit" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Anular Venta">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                            </button>
-                                        </form>
+                                            @if($sale->cashSession?->status === 'abierta')
+                                            <!-- Anular Venta (Solo si la caja sigue abierta) -->
+                                            <form action="{{ route('history.cancel', $sale->id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas anular esta venta #{{ $sale->id }} y devolver el stock?')">
+                                                @csrf
+                                                <button type="submit" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Anular Venta">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                </button>
+                                            </form>
+                                            @else
+                                            <span class="text-[10px] text-slate-400 font-semibold px-1" title="Caja cerrada o aprobada (no anulable)">Cerrada</span>
+                                            @endif
                                         @endif
                                     </div>
                                 </td>

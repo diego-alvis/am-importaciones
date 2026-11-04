@@ -20,6 +20,10 @@ class Product extends Model
         'base_price' => 'decimal:2',
     ];
 
+    protected $appends = [
+        'requires_device_model',
+    ];
+
     public function category()
     {
         return $this->belongsTo(Category::class);
@@ -38,11 +42,24 @@ class Product extends Model
     public function requiresDeviceModel(): bool
     {
         $catName = strtolower($this->category?->name ?? '');
-        return str_contains($catName, 'carcasa') 
-            || str_contains($catName, 'case') 
+        $prodName = strtolower($this->name ?? '');
+
+        return str_contains($catName, 'carcasa')
+            || str_contains($catName, 'case')
             || str_contains($catName, 'funda')
-            || str_contains($catName, 'mica') 
-            || str_contains($catName, 'vidrio') 
-            || str_contains($catName, 'templado');
+            || str_contains($catName, 'mica')
+            || str_contains($catName, 'vidrio')
+            || str_contains($catName, 'templado')
+            || str_contains($prodName, 'carcasa')
+            || str_contains($prodName, 'case')
+            || str_contains($prodName, 'funda')
+            || str_contains($prodName, 'mica')
+            || str_contains($prodName, 'vidrio')
+            || str_contains($prodName, 'templado');
+    }
+
+    public function getRequiresDeviceModelAttribute(): bool
+    {
+        return $this->requiresDeviceModel();
     }
 }

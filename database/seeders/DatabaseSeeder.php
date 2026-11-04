@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\CashSession;
 use App\Models\Category;
 use App\Models\Customer;
-use App\Models\CashSession;
 use App\Models\Location;
 use App\Models\Product;
 use App\Models\Sale;
@@ -57,7 +57,7 @@ class DatabaseSeeder extends Seeder
         // Plaza Norte: A-10, A-5, Mi-7, L-11, L-13, J-14
         $tiendasPlazaNorte = [
             'pn_a10' => Stand::create(['location_id' => $locPlazaNorte->id, 'name' => 'Tienda A-10', 'base_cash' => 100.00]),
-            'pn_a5'  => Stand::create(['location_id' => $locPlazaNorte->id, 'name' => 'Tienda A-5', 'base_cash' => 100.00]),
+            'pn_a5' => Stand::create(['location_id' => $locPlazaNorte->id, 'name' => 'Tienda A-5', 'base_cash' => 100.00]),
             'pn_mi7' => Stand::create(['location_id' => $locPlazaNorte->id, 'name' => 'Tienda Mi-7', 'base_cash' => 100.00]),
             'pn_l11' => Stand::create(['location_id' => $locPlazaNorte->id, 'name' => 'Tienda L-11', 'base_cash' => 100.00]),
             'pn_l13' => Stand::create(['location_id' => $locPlazaNorte->id, 'name' => 'Tienda L-13', 'base_cash' => 100.00]),
@@ -66,11 +66,11 @@ class DatabaseSeeder extends Seeder
 
         // La Muela: A-1, B-1, D-18, B-2, C-2
         $tiendasLaMuela = [
-            'lm_a1'  => Stand::create(['location_id' => $locLaMuela->id, 'name' => 'Tienda A-1', 'base_cash' => 100.00]),
-            'lm_b1'  => Stand::create(['location_id' => $locLaMuela->id, 'name' => 'Tienda B-1', 'base_cash' => 100.00]),
+            'lm_a1' => Stand::create(['location_id' => $locLaMuela->id, 'name' => 'Tienda A-1', 'base_cash' => 100.00]),
+            'lm_b1' => Stand::create(['location_id' => $locLaMuela->id, 'name' => 'Tienda B-1', 'base_cash' => 100.00]),
             'lm_d18' => Stand::create(['location_id' => $locLaMuela->id, 'name' => 'Tienda D-18', 'base_cash' => 100.00]),
-            'lm_b2'  => Stand::create(['location_id' => $locLaMuela->id, 'name' => 'Tienda B-2', 'base_cash' => 100.00]),
-            'lm_c2'  => Stand::create(['location_id' => $locLaMuela->id, 'name' => 'Tienda C-2', 'base_cash' => 100.00]),
+            'lm_b2' => Stand::create(['location_id' => $locLaMuela->id, 'name' => 'Tienda B-2', 'base_cash' => 100.00]),
+            'lm_c2' => Stand::create(['location_id' => $locLaMuela->id, 'name' => 'Tienda C-2', 'base_cash' => 100.00]),
         ];
 
         // Av 54: 1 tienda
@@ -261,6 +261,7 @@ class DatabaseSeeder extends Seeder
         $sessionAbiertaPN = CashSession::create([
             'user_id' => $userVendPlazaNorte->id,
             'stand_id' => $tiendasPlazaNorte['pn_a5']->id,
+            'operator_name' => 'María Torres',
             'opening_time' => (clone $now)->setTime(9, 0),
             'closing_time' => null,
             'expected_cash' => 100.00,
@@ -273,6 +274,7 @@ class DatabaseSeeder extends Seeder
         $sessionPrecierreLM = CashSession::create([
             'user_id' => $userVendLaMuela->id,
             'stand_id' => $tiendasLaMuela['lm_a1']->id,
+            'operator_name' => 'Carlos Mendoza',
             'opening_time' => (clone $now)->setTime(10, 0),
             'closing_time' => (clone $now)->setTime(21, 0),
             'expected_cash' => 100.00,
@@ -285,6 +287,7 @@ class DatabaseSeeder extends Seeder
         $sessionAprobadaAv54 = CashSession::create([
             'user_id' => $userVendAv54->id,
             'stand_id' => $tiendaAv54->id,
+            'operator_name' => 'Lucía Ramos',
             'opening_time' => (clone $now)->subDay()->setTime(9, 30),
             'closing_time' => (clone $now)->subDay()->setTime(21, 30),
             'expected_cash' => 100.00,
@@ -297,6 +300,7 @@ class DatabaseSeeder extends Seeder
         $sessionAprobadaPN10 = CashSession::create([
             'user_id' => $userSupPlazaNorte->id,
             'stand_id' => $tiendasPlazaNorte['pn_a10']->id,
+            'operator_name' => 'Jorge Valdivia',
             'opening_time' => (clone $now)->subDays(2)->setTime(9, 0),
             'closing_time' => (clone $now)->subDays(2)->setTime(21, 0),
             'expected_cash' => 100.00,
@@ -311,7 +315,7 @@ class DatabaseSeeder extends Seeder
         $crearVenta = function ($session, $user, $customer, $fecha, $status = 'completada') use ($createdProducts, $deviceModels) {
             $cantItems = rand(1, 3);
             $selectedProducts = collect($createdProducts)->random($cantItems);
-            
+
             $totalVenta = 0.0;
             $itemsData = [];
 
@@ -319,7 +323,7 @@ class DatabaseSeeder extends Seeder
                 $qty = rand(1, 2);
                 $subtotal = $qty * (float) $prod->base_price;
                 $totalVenta += $subtotal;
-                
+
                 // Solo asignar modelo de celular a Cases y Micas
                 $model = $prod->requiresDeviceModel() ? $deviceModels[array_rand($deviceModels)] : null;
 
@@ -334,6 +338,7 @@ class DatabaseSeeder extends Seeder
             $sale = Sale::create([
                 'cash_session_id' => $session->id,
                 'user_id' => $user->id,
+                'operator_name' => $session->operator_name ?: $user->name,
                 'customer_id' => $customer ? $customer->id : null,
                 'total_amount' => $totalVenta,
                 'status' => $status,
@@ -367,7 +372,7 @@ class DatabaseSeeder extends Seeder
                     'sale_id' => $sale->id,
                     'payment_method' => 'yape',
                     'amount' => $parteYape,
-                    'reference_code' => 'OP-' . rand(100000, 999999),
+                    'reference_code' => 'OP-'.rand(100000, 999999),
                     'created_at' => $fecha,
                 ]);
             } else {
@@ -376,7 +381,7 @@ class DatabaseSeeder extends Seeder
                     'sale_id' => $sale->id,
                     'payment_method' => $pMethod,
                     'amount' => $totalVenta,
-                    'reference_code' => in_array($pMethod, ['yape', 'plin', 'tarjeta']) ? 'TX-' . rand(100000, 999999) : null,
+                    'reference_code' => in_array($pMethod, ['yape', 'plin', 'tarjeta']) ? 'TX-'.rand(100000, 999999) : null,
                     'created_at' => $fecha,
                 ]);
             }
