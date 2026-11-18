@@ -4,10 +4,15 @@ namespace App\Models;
 
 use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
+use Database\Factories\CashSessionFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class CashSession extends Model
 {
+    /** @use HasFactory<CashSessionFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
         'stand_id',

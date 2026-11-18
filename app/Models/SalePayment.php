@@ -2,10 +2,15 @@
 
 namespace App\Models;
 
+use Database\Factories\SalePaymentFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class SalePayment extends Model
 {
+    /** @use HasFactory<SalePaymentFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'sale_id',
         'payment_method',

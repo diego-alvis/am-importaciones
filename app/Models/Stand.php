@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Database\Factories\StandFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Stand extends Model
 {
-    use SoftDeletes;
+    /** @use HasFactory<StandFactory> */
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'location_id',

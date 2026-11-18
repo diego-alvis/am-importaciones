@@ -3,10 +3,15 @@
 namespace App\Models;
 
 use App\Enums\TransferStatus;
+use Database\Factories\TransferFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Transfer extends Model
 {
+    /** @use HasFactory<TransferFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'from_location_id',
         'to_location_id',

@@ -2,10 +2,15 @@
 
 namespace App\Models;
 
+use Database\Factories\TransferItemFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class TransferItem extends Model
 {
+    /** @use HasFactory<TransferItemFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'transfer_id',
         'product_id',

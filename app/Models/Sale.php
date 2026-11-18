@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use Database\Factories\SaleFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Sale extends Model
 {
-    use SoftDeletes;
+    /** @use HasFactory<SaleFactory> */
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'cash_session_id',
