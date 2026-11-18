@@ -1,56 +1,58 @@
-<nav x-data="{ open: false, showStoreModal: false }" class="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-xs">
+<nav x-data="{ open: false, showStoreModal: false }" class="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
     <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16 gap-3">
-            <div class="flex items-center min-w-0 gap-3 xl:gap-6">
+            <div class="flex items-center gap-4 2xl:gap-6 shrink-0">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
-                        <x-application-logo class="block h-9 w-auto fill-current text-blue-600 shrink-0" />
-                        <span class="font-black text-slate-800 text-lg hidden sm:inline tracking-tight whitespace-nowrap">A&M <span class="text-blue-600">IMPORTACIONES</span></span>
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-sm shadow-blue-600/20 flex items-center justify-center p-1 shrink-0 transition-transform duration-150 group-hover:scale-105">
+                            <x-application-logo :badge="false" class="w-full h-full text-white" />
+                        </div>
+                        <span class="font-black text-slate-800 text-base sm:text-lg hidden sm:inline tracking-tight whitespace-nowrap">A&M <span class="text-blue-600">IMPORTACIONES</span></span>
                     </a>
                 </div>
 
                 <!-- Navigation Links según Rol -->
-                <div class="hidden lg:flex items-center gap-1 xl:gap-3.5 h-16 min-w-0">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
+                <div class="hidden xl:flex items-center gap-2.5 2xl:gap-4 h-16 shrink-0">
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="whitespace-nowrap text-sm font-semibold">
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     
                     @if(auth()->check() && !auth()->user()->isAlmacen())
-                        <x-nav-link :href="route('pos.index')" :active="request()->routeIs('pos.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
+                        <x-nav-link :href="route('pos.index')" :active="request()->routeIs('pos.*')" class="whitespace-nowrap text-sm font-semibold">
                             {{ __('POS') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('cash.index')" :active="request()->routeIs('cash.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
+                        <x-nav-link :href="route('cash.index')" :active="request()->routeIs('cash.*')" class="whitespace-nowrap text-sm font-semibold">
                             {{ __('Caja') }}
                         </x-nav-link>
                     @endif
 
                     @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'encargado']))
-                        <x-nav-link :href="route('supervisor.cajas')" :active="request()->routeIs('supervisor.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
+                        <x-nav-link :href="route('supervisor.cajas')" :active="request()->routeIs('supervisor.*')" class="whitespace-nowrap text-sm font-semibold">
                             {{ __('Supervisión') }}
                         </x-nav-link>
                     @endif
 
-                    <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
+                    <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')" class="whitespace-nowrap text-sm font-semibold">
                         {{ __('Inventario') }}
                     </x-nav-link>
 
                     @if (auth()->check() && auth()->user()->role === 'admin')
-                        <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
+                        <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')" class="whitespace-nowrap text-sm font-semibold">
                             {{ __('Categorías') }}
                         </x-nav-link>
                     @endif
 
                     @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'almacenero', 'encargado', 'vendedor']))
-                        <x-nav-link :href="route('transfers.index')" :active="request()->routeIs('transfers.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
+                        <x-nav-link :href="route('transfers.index')" :active="request()->routeIs('transfers.*')" class="whitespace-nowrap text-sm font-semibold">
                             {{ __('Transferencias') }}
                         </x-nav-link>
                     @endif
 
                     @if (auth()->check() && !auth()->user()->isAlmacen())
-                        <x-nav-link :href="route('history.index')" :active="request()->routeIs('history.*')" class="whitespace-nowrap text-xs xl:text-sm font-semibold">
+                        <x-nav-link :href="route('history.index')" :active="request()->routeIs('history.*')" class="whitespace-nowrap text-sm font-semibold">
                             {{ __('Historial') }}
                         </x-nav-link>
                     @endif
@@ -58,7 +60,7 @@
             </div>
 
             <!-- Settings & Store Selector -->
-            <div class="hidden sm:flex items-center gap-2 xl:gap-3 shrink-0">
+            <div class="hidden sm:flex items-center gap-3 shrink-0">
                 
                 @if(auth()->check())
                     @php
@@ -69,10 +71,10 @@
 
                     @if(!$currentUser->isAlmacen() && $availableStands->count() > 0)
                         <!-- Selector Rápido de Tienda Activa -->
-                        <button type="button" @click="showStoreModal = true" class="inline-flex items-center gap-1.5 xl:gap-2 px-2.5 xl:px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition-colors shrink-0 whitespace-nowrap">
+                        <button type="button" @click="showStoreModal = true" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition-colors shrink-0 whitespace-nowrap">
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-                            <span class="truncate max-w-[130px] xl:max-w-none">{{ $activeStand?->name ?? 'Elegir Tienda' }}</span>
-                            <span class="text-blue-400 font-normal hidden xl:inline">({{ $activeStand?->location?->name ?? $currentUser->location?->name }})</span>
+                            <span class="truncate max-w-[140px] 2xl:max-w-none">{{ $activeStand?->name ?? 'Elegir Tienda' }}</span>
+                            <span class="text-blue-400 font-normal hidden 2xl:inline">({{ $activeStand?->location?->name ?? $currentUser->location?->name }})</span>
                             <svg class="w-3.5 h-3.5 text-blue-500 ml-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
                     @elseif($currentUser->isAlmacen())
@@ -83,13 +85,13 @@
                     @endif
 
                     <div class="text-right hidden sm:block shrink-0">
-                        <p class="text-xs font-bold text-slate-800 leading-none truncate max-w-[100px] xl:max-w-[150px]">{{ $currentUser->display_name }}</p>
-                        <span class="text-[10px] text-blue-600 font-extrabold uppercase">{{ $currentUser->role }}</span>
+                        <p class="text-[13px] font-bold text-slate-800 leading-tight truncate max-w-[180px]">{{ $currentUser->display_name }}</p>
+                        <span class="text-[10px] text-blue-600 font-extrabold uppercase tracking-wide">{{ $currentUser->role }}</span>
                     </div>
 
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
-                            <button class="inline-flex items-center p-2 border border-slate-200 rounded-full text-slate-600 bg-slate-50 hover:bg-slate-100 focus:outline-none transition ease-in-out duration-150 shrink-0">
+                            <button class="inline-flex items-center justify-center w-9 h-9 border border-slate-200 rounded-full text-slate-700 bg-slate-50 hover:bg-slate-100 focus:outline-none transition ease-in-out duration-150 shrink-0">
                                 <span class="font-bold text-xs">{{ substr($currentUser->display_name ?? 'U', 0, 1) }}</span>
                             </button>
                         </x-slot>
@@ -120,7 +122,7 @@
             </div>
 
             <!-- Hamburger -->
-            <div class="-me-2 flex items-center lg:hidden">
+            <div class="-me-2 flex items-center xl:hidden">
                 <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -132,7 +134,7 @@
     </div>
 
     <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden lg:hidden bg-white border-t border-slate-100">
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden xl:hidden bg-white border-t border-slate-100">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
@@ -209,7 +211,7 @@
             $mStands = Auth::user()->getAvailableStands();
             $mActive = Auth::user()->getActiveStand();
         @endphp
-        <div x-show="showStoreModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4" style="display: none;">
+        <div x-show="showStoreModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" style="display: none;">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden text-left" @click.away="showStoreModal = false">
                 <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                     <div>
