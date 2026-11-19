@@ -10,6 +10,7 @@ use App\Enums\StandDisplayStatus;
 use App\Enums\TransferStatus;
 use App\Models\CashSession;
 use App\Models\Location;
+use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Setting;
@@ -133,32 +134,90 @@ class DashboardService
      */
     private function getWarehouseDashboardData(User $user): array
     {
+        $today = Carbon::today();
+        $startOfMonth = $today->copy()->startOfMonth();
         $almacenLocation = Location::where('type', LocationType::Almacen)->first();
         $almacenId = $almacenLocation?->id ?? $user->location_id;
 
-        $totalSkus = Stock::where('location_id', $almacenId)->where('quantity', '>', 0)->count();
-        $totalUnidades = (int) Stock::where('location_id', $almacenId)->sum('quantity');
+        $baseWarehouseStock = Stock::query()
+            ->join('products', 'stocks.product_id', '=', 'products.id')
+            ->whereNull('products.deleted_at')
+            ->where('stocks.location_id', $almacenId);
+
+        $totalCatalogProducts = Product::count();
+        $totalSkus = (clone $baseWarehouseStock)->where('stocks.quantity', '>', 0)->count();
+        $totalUnidades = (int) (clone $baseWarehouseStock)->sum('stocks.quantity');
+        $valorizacionAlmacen = (float) (clone $baseWarehouseStock)->sum(DB::raw('stocks.quantity * products.base_price'));
+        $agotadosCount = (clone $baseWarehouseStock)->where('stocks.quantity', '<=', 0)->count();
+        $criticosCount = (clone $baseWarehouseStock)
+            ->where('stocks.quantity', '>', 0)
+            ->whereColumn('stocks.quantity', '<=', 'stocks.min_stock')
+            ->count();
+        $alertasTotalCount = $agotadosCount + $criticosCount;
+
+        $solicitudesPendientesQuery = Transfer::with(['toLocation', 'requestedBy', 'items.product'])
+            ->where('from_location_id', $almacenId)
+            ->where('status', TransferStatus::Solicitado)
+            ->latest();
+
+        $solicitudesPendientesCount = (clone $solicitudesPendientesQuery)->count();
+        $solicitudesPendientes = $solicitudesPendientesQuery->take(6)->get();
+
+        $enTransitoCount = Transfer::where('from_location_id', $almacenId)
+            ->where('status', TransferStatus::EnTransito)
+            ->count();
+
+        $despachosHoyCount = Transfer::where('from_location_id', $almacenId)
+            ->whereIn('status', [TransferStatus::EnTransito, TransferStatus::Recibido])
+            ->whereBetween('updated_at', [$today->copy()->startOfDay(), $today->copy()->endOfDay()])
+            ->count();
+
+        $unidadesDespachadasMes = (int) DB::table('transfer_items')
+            ->join('transfers', 'transfer_items.transfer_id', '=', 'transfers.id')
+            ->where('transfers.from_location_id', $almacenId)
+            ->whereIn('transfers.status', [TransferStatus::EnTransito->value, TransferStatus::Recibido->value])
+            ->whereBetween('transfers.created_at', [$startOfMonth, $today->copy()->endOfDay()])
+            ->sum('transfer_items.quantity');
 
         $alertasAlmacen = Stock::with(['product.category', 'location'])
+            ->whereHas('product')
             ->where('location_id', $almacenId)
             ->whereColumn('quantity', '<=', 'min_stock')
             ->orderBy('quantity', 'asc')
-            ->take(8)
+            ->take(10)
             ->get();
 
         $transferenciasRecientes = Transfer::with(['toLocation', 'items.product'])
             ->where('from_location_id', $almacenId)
+            ->where('status', '!=', TransferStatus::Solicitado)
             ->latest()
-            ->take(5)
+            ->take(6)
             ->get();
+
+        $despachosUltimos7Dias = $this->getWarehouseDispatches7Days($almacenId, $today);
+        $stockPorCategoria = $this->getWarehouseCategoryDistribution($almacenId);
+        $necesidadesSedes = $this->getStoreLocationsNeeds($almacenId);
 
         return compact(
             'user',
+            'almacenLocation',
+            'totalCatalogProducts',
             'totalSkus',
             'totalUnidades',
+            'valorizacionAlmacen',
+            'agotadosCount',
+            'criticosCount',
+            'alertasTotalCount',
+            'solicitudesPendientesCount',
+            'solicitudesPendientes',
+            'enTransitoCount',
+            'despachosHoyCount',
+            'unidadesDespachadasMes',
             'alertasAlmacen',
             'transferenciasRecientes',
-            'almacenLocation'
+            'despachosUltimos7Dias',
+            'stockPorCategoria',
+            'necesidadesSedes'
         );
     }
 
@@ -614,5 +673,150 @@ class DashboardService
             'filterLocations' => $filterLocations,
             'availableStandsList' => $filterStands->get(),
         ];
+    }
+
+    /**
+     * Evolución diaria de despachos y unidades enviadas desde Almacén en los últimos 7 días.
+     *
+     * @return list<array{
+     *     date: string,
+     *     short_day: string,
+     *     day_num: string,
+     *     full_date: string,
+     *     units: int,
+     *     transfers: int,
+     *     is_today: bool
+     * }>
+     */
+    private function getWarehouseDispatches7Days(?int $almacenId, Carbon $today): array
+    {
+        $startDate = $today->copy()->subDays(6)->startOfDay();
+        $endDate = $today->copy()->endOfDay();
+
+        $rows = DB::table('transfers')
+            ->join('transfer_items', 'transfers.id', '=', 'transfer_items.transfer_id')
+            ->where('transfers.from_location_id', $almacenId)
+            ->whereIn('transfers.status', [TransferStatus::EnTransito->value, TransferStatus::Recibido->value])
+            ->whereBetween('transfers.created_at', [$startDate, $endDate])
+            ->selectRaw('DATE(transfers.created_at) as dispatch_date, COUNT(DISTINCT transfers.id) as transfers_count, COALESCE(SUM(transfer_items.quantity), 0) as units')
+            ->groupBy('dispatch_date')
+            ->get()
+            ->keyBy('dispatch_date');
+
+        $dayNames = [
+            1 => 'Lun',
+            2 => 'Mar',
+            3 => 'Mié',
+            4 => 'Jue',
+            5 => 'Vie',
+            6 => 'Sáb',
+            7 => 'Dom',
+        ];
+
+        $trend = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = $today->copy()->subDays($i);
+            $key = $date->toDateString();
+            $row = $rows->get($key);
+
+            $trend[] = [
+                'date' => $key,
+                'short_day' => $dayNames[$date->dayOfWeekIso],
+                'day_num' => $date->format('d/m'),
+                'full_date' => $date->format('d/m/Y'),
+                'units' => $row ? (int) $row->units : 0,
+                'transfers' => $row ? (int) $row->transfers_count : 0,
+                'is_today' => $i === 0,
+            ];
+        }
+
+        return $trend;
+    }
+
+    /**
+     * Distribución del inventario físico en Almacén agrupada por categoría.
+     */
+    private function getWarehouseCategoryDistribution(?int $almacenId): Collection
+    {
+        $rows = DB::table('stocks')
+            ->join('products', 'stocks.product_id', '=', 'products.id')
+            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->whereNull('products.deleted_at')
+            ->where('stocks.location_id', $almacenId)
+            ->select(
+                'categories.id as category_id',
+                'categories.name as category_name',
+                DB::raw('COUNT(*) as skus_count'),
+                DB::raw('COALESCE(SUM(stocks.quantity), 0) as units_count'),
+                DB::raw('SUM(CASE WHEN stocks.quantity <= stocks.min_stock THEN 1 ELSE 0 END) as low_count')
+            )
+            ->groupBy('categories.id', 'categories.name')
+            ->orderByDesc('units_count')
+            ->get();
+
+        $totalUnits = (int) $rows->sum('units_count');
+
+        return $rows->map(function (object $row) use ($totalUnits): array {
+            $units = (int) $row->units_count;
+
+            return [
+                'category_id' => (int) $row->category_id,
+                'category_name' => $row->category_name,
+                'skus_count' => (int) $row->skus_count,
+                'units_count' => $units,
+                'low_count' => (int) $row->low_count,
+                'pct' => $totalUnits > 0 ? round(($units / $totalUnits) * 100, 1) : 0.0,
+            ];
+        });
+    }
+
+    /**
+     * Resumen de necesidad de reposición por cada sede comercial.
+     */
+    private function getStoreLocationsNeeds(?int $almacenId): Collection
+    {
+        $sedes = Location::where('type', LocationType::Sede->value)->orderBy('name')->get();
+        $sedeIds = $sedes->pluck('id');
+
+        $stockStats = DB::table('stocks')
+            ->join('products', 'stocks.product_id', '=', 'products.id')
+            ->whereNull('products.deleted_at')
+            ->whereIn('stocks.location_id', $sedeIds)
+            ->select(
+                'stocks.location_id',
+                DB::raw('SUM(CASE WHEN stocks.quantity <= 0 THEN 1 ELSE 0 END) as agotados_count'),
+                DB::raw('SUM(CASE WHEN stocks.quantity > 0 AND stocks.quantity <= stocks.min_stock THEN 1 ELSE 0 END) as bajo_stock_count'),
+                DB::raw('COALESCE(SUM(stocks.quantity), 0) as total_units')
+            )
+            ->groupBy('stocks.location_id')
+            ->get()
+            ->keyBy('location_id');
+
+        $transferStats = DB::table('transfers')
+            ->where('from_location_id', $almacenId)
+            ->whereIn('to_location_id', $sedeIds)
+            ->whereIn('status', [TransferStatus::Solicitado->value, TransferStatus::EnTransito->value])
+            ->selectRaw(
+                'to_location_id, SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as solicitudes_count, SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as en_transito_count',
+                [TransferStatus::Solicitado->value, TransferStatus::EnTransito->value]
+            )
+            ->groupBy('to_location_id')
+            ->get()
+            ->keyBy('to_location_id');
+
+        return $sedes->map(function (Location $sede) use ($stockStats, $transferStats): array {
+            $stock = $stockStats->get($sede->id);
+            $transfer = $transferStats->get($sede->id);
+
+            return [
+                'id' => $sede->id,
+                'name' => $sede->name,
+                'agotados_count' => $stock ? (int) $stock->agotados_count : 0,
+                'bajo_stock_count' => $stock ? (int) $stock->bajo_stock_count : 0,
+                'total_units' => $stock ? (int) $stock->total_units : 0,
+                'solicitudes_count' => $transfer ? (int) $transfer->solicitudes_count : 0,
+                'en_transito_count' => $transfer ? (int) $transfer->en_transito_count : 0,
+            ];
+        });
     }
 }

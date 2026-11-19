@@ -28,7 +28,7 @@ class InventoryController extends Controller
     public function store(StoreProductRequest $request, CreateProductAction $createProductAction): RedirectResponse
     {
         try {
-            $createProductAction->execute($request->validated(), $request->all());
+            $createProductAction->execute($request->validated(), $request->all(), auth()->user());
 
             return redirect()->route('inventory.index')->with('success', 'Producto registrado exitosamente.');
         } catch (\Throwable $e) {

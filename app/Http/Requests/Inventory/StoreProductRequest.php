@@ -25,6 +25,7 @@ class StoreProductRequest extends FormRequest
             ],
             'category_id' => 'required|exists:categories,id',
             'base_price' => 'required|numeric|min:0',
+            'min_stock' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ];
     }
 }

@@ -22,6 +22,7 @@ class AdjustStockRequest extends FormRequest
             'location_id' => ['required', 'exists:locations,id'],
             'operation' => ['required', Rule::enum(StockAdjustmentType::class)],
             'quantity' => ['required', 'integer', 'min:0'],
+            'min_stock' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ];
     }
 }

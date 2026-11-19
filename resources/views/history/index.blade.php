@@ -238,7 +238,14 @@
                                         @if($sale->status === 'completada' && in_array(auth()->user()->role, ['admin', 'encargado']))
                                             @if($sale->cashSession?->status === 'abierta')
                                             <!-- Anular Venta (Solo si la caja sigue abierta) -->
-                                            <form action="{{ route('history.cancel', $sale->id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas anular esta venta #{{ $sale->id }} y devolver el stock?')">
+                                            <form
+                                                action="{{ route('history.cancel', $sale->id) }}"
+                                                method="POST"
+                                                data-confirm="¿Seguro que deseas anular la venta #{{ $sale->id }} y devolver el stock a su sede?"
+                                                data-confirm-title="Anular Venta"
+                                                data-confirm-button="Sí, Anular Venta"
+                                                data-confirm-tone="rose"
+                                            >
                                                 @csrf
                                                 <button type="submit" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Anular Venta">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>

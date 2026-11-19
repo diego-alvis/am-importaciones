@@ -62,7 +62,14 @@
                                         </button>
 
                                         <!-- Eliminar Categoría -->
-                                        <form action="{{ route('categories.destroy', $category->id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar la categoría {{ $category->name }}?')">
+                                        <form
+                                            action="{{ route('categories.destroy', $category->id) }}"
+                                            method="POST"
+                                            data-confirm="¿Seguro que deseas eliminar la categoría '{{ $category->name }}'?"
+                                            data-confirm-title="Eliminar Categoría"
+                                            data-confirm-button="Sí, Eliminar"
+                                            data-confirm-tone="rose"
+                                        >
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors {{ $category->products_count > 0 ? 'opacity-40 cursor-not-allowed' : '' }}" {{ $category->products_count > 0 ? 'disabled' : '' }} title="{{ $category->products_count > 0 ? 'No se puede eliminar porque contiene productos' : 'Eliminar Categoría' }}">

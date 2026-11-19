@@ -6,14 +6,17 @@ use App\Enums\LocationType;
 use App\Models\Category;
 use App\Models\Location;
 use App\Models\Product;
+use App\Models\Stock;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
     /**
      * Obtiene los productos filtrados según el rol, sede y estado de stock.
      *
+     * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
     public function getInventoryData(User $user, array $filters): array
@@ -22,16 +25,23 @@ class InventoryService
         $categoryId = $filters['category_id'] ?? null;
         $stockFilter = $filters['stock_status'] ?? null;
         $filterLocationId = $filters['location_id'] ?? null;
+        $sort = $filters['sort'] ?? 'name_asc';
 
         $centralWarehouse = Location::where('type', LocationType::Almacen->value)->first();
         $scopedLocation = $this->determineScopedLocation($user, $filterLocationId, $centralWarehouse);
         $scopedLocationId = $scopedLocation?->id;
 
         $query = Product::with(['category', 'stocks.location'])
-            ->orderBy('name', 'asc');
+            ->withSum([
+                'stocks as scoped_stock_qty' => function ($q) use ($scopedLocationId): void {
+                    if ($scopedLocationId) {
+                        $q->where('location_id', $scopedLocationId);
+                    }
+                },
+            ], 'quantity');
 
         if (! empty($search)) {
-            $query->where(function ($q) use ($search) {
+            $query->where(function ($q) use ($search): void {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%");
             });
@@ -42,24 +52,40 @@ class InventoryService
         }
 
         if ($stockFilter === 'bajo_stock') {
-            $query->whereHas('stocks', function ($q) use ($scopedLocationId) {
+            $query->whereHas('stocks', function ($q) use ($scopedLocationId): void {
                 if ($scopedLocationId) {
                     $q->where('location_id', $scopedLocationId);
                 }
                 $q->whereColumn('quantity', '<=', 'min_stock');
             });
         } elseif ($stockFilter === 'sin_stock') {
-            $query->whereHas('stocks', function ($q) use ($scopedLocationId) {
+            $query->whereHas('stocks', function ($q) use ($scopedLocationId): void {
                 if ($scopedLocationId) {
                     $q->where('location_id', $scopedLocationId);
                 }
                 $q->where('quantity', '<=', 0);
             });
+        } elseif ($stockFilter === 'ok') {
+            $query->whereHas('stocks', function ($q) use ($scopedLocationId): void {
+                if ($scopedLocationId) {
+                    $q->where('location_id', $scopedLocationId);
+                }
+                $q->whereColumn('quantity', '>', 'min_stock');
+            });
         }
+
+        match ($sort) {
+            'stock_asc' => $query->orderByRaw('COALESCE(scoped_stock_qty, 0) ASC')->orderBy('name', 'asc'),
+            'stock_desc' => $query->orderByRaw('COALESCE(scoped_stock_qty, 0) DESC')->orderBy('name', 'asc'),
+            'price_desc' => $query->orderBy('base_price', 'desc')->orderBy('name', 'asc'),
+            'price_asc' => $query->orderBy('base_price', 'asc')->orderBy('name', 'asc'),
+            default => $query->orderBy('name', 'asc'),
+        };
 
         $products = $query->paginate(15)->withQueryString();
         $categories = Category::orderBy('name')->get();
         $locations = $this->getAvailableLocations($user);
+        $summary = $this->buildInventorySummary($scopedLocationId);
 
         return compact(
             'products',
@@ -70,8 +96,34 @@ class InventoryService
             'stockFilter',
             'scopedLocation',
             'centralWarehouse',
-            'filterLocationId'
+            'filterLocationId',
+            'sort',
+            'summary'
         );
+    }
+
+    /**
+     * Calcula los indicadores de inventario para el alcance visible actual.
+     *
+     * @return array{total_products: int, total_units: int, out_of_stock: int, low_stock: int, inventory_value: float}
+     */
+    private function buildInventorySummary(?int $scopedLocationId): array
+    {
+        $stockBaseQuery = Stock::query()
+            ->join('products', 'stocks.product_id', '=', 'products.id')
+            ->whereNull('products.deleted_at');
+
+        if ($scopedLocationId) {
+            $stockBaseQuery->where('stocks.location_id', $scopedLocationId);
+        }
+
+        return [
+            'total_products' => Product::count(),
+            'total_units' => (int) (clone $stockBaseQuery)->sum('stocks.quantity'),
+            'out_of_stock' => (clone $stockBaseQuery)->where('stocks.quantity', '<=', 0)->distinct('stocks.product_id')->count('stocks.product_id'),
+            'low_stock' => (clone $stockBaseQuery)->where('stocks.quantity', '>', 0)->whereColumn('stocks.quantity', '<=', 'stocks.min_stock')->distinct('stocks.product_id')->count('stocks.product_id'),
+            'inventory_value' => (float) (clone $stockBaseQuery)->sum(DB::raw('stocks.quantity * products.base_price')),
+        ];
     }
 
     private function determineScopedLocation(User $user, ?string $filterLocationId, ?Location $centralWarehouse): ?Location

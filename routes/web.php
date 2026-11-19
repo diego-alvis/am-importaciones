@@ -68,12 +68,15 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('role:admin,encargado,almacenero')
             ->name('adjust');
 
-        // Modificaciones al catálogo maestro (Exclusivo Administrador)
-        Route::middleware(['role:admin'])->group(function () {
+        // Modificaciones al catálogo maestro (Administrador y Almacenero: crear/editar; solo Admin: archivar)
+        Route::middleware(['role:admin,almacenero'])->group(function () {
             Route::post('/', [InventoryController::class, 'store'])->name('store');
             Route::put('/{id}', [InventoryController::class, 'update'])->name('update');
-            Route::delete('/{id}', [InventoryController::class, 'destroy'])->name('destroy');
         });
+
+        Route::delete('/{id}', [InventoryController::class, 'destroy'])
+            ->middleware(['role:admin'])
+            ->name('destroy');
     });
 
     // 7. Categorías de Productos (Exclusivo Administrador)

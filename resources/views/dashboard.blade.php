@@ -30,6 +30,9 @@
                     <a href="{{ route('transfers.index') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-2.5 rounded-xl text-sm shadow-sm flex items-center gap-2 transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
                         <span>Gestionar Traslados</span>
+                        @if(($solicitudesPendientesCount ?? 0) > 0)
+                            <span class="px-1.5 py-0.5 rounded-md bg-white/20 text-white text-[11px] font-black">{{ $solicitudesPendientesCount }}</span>
+                        @endif
                     </a>
                     <a href="{{ route('inventory.index') }}" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-sm flex items-center gap-2 transition-all">
                         <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
@@ -62,80 +65,451 @@
                 <!-- ============================================== -->
                 <!-- VISTA EXCLUSIVA: ALMACÉN CENTRAL               -->
                 <!-- ============================================== -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-gradient-to-br from-blue-700 to-indigo-800 rounded-2xl shadow-md p-6 text-white">
-                        <p class="text-blue-200 text-xs font-bold uppercase tracking-wider mb-1">Catálogo Activo en Almacén</p>
-                        <h3 class="text-3xl font-black">{{ $totalSkus }} SKUs</h3>
-                        <p class="text-xs text-blue-200 mt-2 font-medium">Líneas de accesorios con stock físico</p>
+
+                <!-- FILA 1: 4 TARJETAS KPI LOGÍSTICAS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+                    <a href="{{ route('transfers.index') }}" class="group bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-md p-5 text-white relative overflow-hidden hover:shadow-lg transition-all">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-blue-100 text-[11px] font-bold uppercase tracking-wider">Pedidos por Despachar</p>
+                            @if($solicitudesPendientesCount > 0)
+                                <span class="px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 text-[10px] font-black uppercase">Acción</span>
+                            @endif
+                        </div>
+                        <h3 class="text-3xl font-black mt-1">{{ $solicitudesPendientesCount }}</h3>
+                        <p class="text-xs text-blue-100/90 mt-2 font-medium flex items-center justify-between">
+                            <span>En tránsito actual: <strong>{{ $enTransitoCount }}</strong></span>
+                            <span class="group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+                        </p>
+                    </a>
+
+                    <div class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl shadow-md p-5 text-white relative overflow-hidden">
+                        <p class="text-emerald-100 text-[11px] font-bold uppercase tracking-wider">Stock Físico en Almacén</p>
+                        <h3 class="text-3xl font-black mt-1">{{ number_format($totalUnidades) }} <span class="text-base font-bold text-emerald-100">und</span></h3>
+                        <p class="text-xs text-emerald-100/90 mt-2 font-medium">
+                            <strong>{{ $totalSkus }}</strong> de {{ $totalCatalogProducts }} SKUs disponibles
+                        </p>
                     </div>
 
-                    <div class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl shadow-md p-6 text-white">
-                        <p class="text-emerald-100 text-xs font-bold uppercase tracking-wider mb-1">Stock Físico Global</p>
-                        <h3 class="text-3xl font-black">{{ number_format($totalUnidades) }} Unidades</h3>
-                        <p class="text-xs text-emerald-100 mt-2 font-medium">Disponibles para enviar a sedes</p>
+                    <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-md p-5 text-white relative overflow-hidden">
+                        <p class="text-slate-300 text-[11px] font-bold uppercase tracking-wider">Despachado en el Mes</p>
+                        <h3 class="text-3xl font-black mt-1">{{ number_format($unidadesDespachadasMes) }} <span class="text-base font-bold text-slate-300">und</span></h3>
+                        <p class="text-xs text-slate-300 mt-2 font-medium">
+                            {{ $despachosHoyCount }} envío(s) hoy &bull; Valor: <strong>S/ {{ number_format($valorizacionAlmacen, 2) }}</strong>
+                        </p>
                     </div>
 
-                    <div class="bg-gradient-to-br from-amber-500 to-rose-600 rounded-2xl shadow-md p-6 text-white">
-                        <p class="text-amber-100 text-xs font-bold uppercase tracking-wider mb-1">Alertas de Reabastecimiento</p>
-                        <h3 class="text-3xl font-black">{{ $alertasAlmacen->count() }}</h3>
-                        <p class="text-xs text-amber-100 mt-2 font-medium">Productos con stock crítico en almacén</p>
+                    <a href="{{ route('inventory.index', ['stock_status' => 'bajo_stock', 'sort' => 'stock_asc']) }}" class="group bg-gradient-to-br from-amber-500 to-rose-600 rounded-2xl shadow-md p-5 text-white relative overflow-hidden hover:shadow-lg transition-all">
+                        <p class="text-amber-100 text-[11px] font-bold uppercase tracking-wider">Salud del Inventario</p>
+                        <h3 class="text-3xl font-black mt-1">{{ $alertasTotalCount }} <span class="text-base font-bold text-amber-100">alertas</span></h3>
+                        <p class="text-xs text-amber-50 mt-2 font-medium flex items-center justify-between">
+                            <span><strong>{{ $agotadosCount }}</strong> agotado(s) &bull; <strong>{{ $criticosCount }}</strong> crítico(s)</span>
+                            <span class="group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+                        </p>
+                    </a>
+                </div>
+
+                <!-- FILA 2: ANALÍTICA VISUAL (DESPACHOS 7 DÍAS + DISTRIBUCIÓN POR CATEGORÍA) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Gráfico 1: Despachos últimos 7 días -->
+                    <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 p-6" x-data="warehouseDispatchChart(@js($despachosUltimos7Dias))">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                            <div>
+                                <h3 class="font-black text-slate-900 text-lg">Actividad Logística &bull; Últimos 7 Días</h3>
+                                <p class="text-xs text-slate-400">Volumen de mercadería despachada desde Almacén Central</p>
+                            </div>
+
+                            <div class="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 self-start sm:self-auto">
+                                <button
+                                    type="button"
+                                    @click="metric = 'units'"
+                                    :class="metric === 'units' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                                    class="px-3 py-1 rounded-lg text-xs font-bold transition-all"
+                                >
+                                    Unidades
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="metric = 'transfers'"
+                                    :class="metric === 'transfers' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                                    class="px-3 py-1 rounded-lg text-xs font-bold transition-all"
+                                >
+                                    Envíos
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3 mb-5 p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                            <div>
+                                <span class="text-slate-400 font-semibold block">Total 7 días</span>
+                                <strong class="text-slate-900 font-black text-sm" x-text="metric === 'units' ? (totalPeriod.toLocaleString('en-US') + ' und') : (totalPeriod + ' envío(s)')"></strong>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 font-semibold block">Promedio diario</span>
+                                <strong class="text-slate-900 font-black text-sm" x-text="metric === 'units' ? (Math.round(avgPeriod).toLocaleString('en-US') + ' und') : (avgPeriod.toFixed(1) + ' envío(s)')"></strong>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 font-semibold block">Día pico</span>
+                                <strong class="text-blue-600 font-black text-sm" x-text="bestDay ? (bestDay.short_day + ' ' + bestDay.day_num) : '--'"></strong>
+                            </div>
+                        </div>
+
+                        <div class="relative h-52 flex flex-col justify-end pt-6">
+                            <div
+                                x-show="hoveredDay"
+                                x-transition.opacity
+                                class="absolute top-0 right-0 bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg z-20 pointer-events-none"
+                                style="display: none;"
+                            >
+                                <span class="font-bold" x-text="hoveredDay ? (hoveredDay.short_day + ' ' + hoveredDay.full_date) : ''"></span>
+                                &bull;
+                                <span class="text-emerald-300 font-black" x-text="hoveredDay ? (hoveredDay.units + ' und / ' + hoveredDay.transfers + ' envío(s)') : ''"></span>
+                            </div>
+
+                            <div class="relative flex-1 flex items-end">
+                                <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                                    <div class="border-b border-dashed border-slate-100 w-full"></div>
+                                    <div class="border-b border-dashed border-slate-100 w-full"></div>
+                                    <div class="border-b border-dashed border-slate-100 w-full"></div>
+                                    <div class="border-b border-slate-200 w-full"></div>
+                                </div>
+
+                                <div
+                                    x-show="avgPeriod > 0"
+                                    class="absolute left-0 right-0 border-t-2 border-dashed border-blue-400/50 pointer-events-none z-10 flex justify-end"
+                                    :style="'bottom: ' + avgHeightPct + '%'"
+                                >
+                                    <span class="text-[9px] font-bold bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded -mt-4 border border-blue-100">
+                                        Prom
+                                    </span>
+                                </div>
+
+                                <div class="w-full h-full grid grid-cols-7 gap-2 sm:gap-3 items-end relative z-10 px-1">
+                                    <template x-for="(day, index) in days" :key="day.date">
+                                        <div
+                                            class="h-full flex flex-col justify-end items-center group cursor-pointer"
+                                            @mouseenter="hoveredIndex = index"
+                                            @mouseleave="hoveredIndex = null"
+                                        >
+                                            <span
+                                                class="text-[10px] font-bold mb-1 transition-opacity"
+                                                :class="(hoveredIndex === index || day.is_today) ? 'text-slate-800 opacity-100' : 'text-slate-400 opacity-0 group-hover:opacity-100'"
+                                                x-text="getVal(day)"
+                                            ></span>
+
+                                            <div class="w-full max-w-[44px] h-[82%] flex items-end justify-center">
+                                                <div
+                                                    class="w-full rounded-t-xl transition-all duration-300"
+                                                    :class="day.is_today
+                                                        ? 'bg-gradient-to-t from-blue-600 to-indigo-500 shadow-md shadow-blue-500/20'
+                                                        : (getVal(day) > 0
+                                                            ? (hoveredIndex === index ? 'bg-blue-500' : 'bg-blue-200 group-hover:bg-blue-400')
+                                                            : 'bg-slate-100')"
+                                                    :style="'height: ' + getBarHeightPct(day) + '%'"
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-7 gap-2 sm:gap-3 mt-2 px-1">
+                                <template x-for="day in days" :key="'wh-lbl-' + day.date">
+                                    <div class="text-center">
+                                        <span
+                                            class="text-[11px] font-bold block leading-tight"
+                                            :class="day.is_today ? 'text-blue-600' : 'text-slate-600'"
+                                            x-text="day.is_today ? 'Hoy' : day.short_day"
+                                        ></span>
+                                        <span class="text-[10px] text-slate-400 block" x-text="day.day_num"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico 2: Distribución de Stock por Categoría -->
+                    <div class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between gap-2 mb-4">
+                                <div>
+                                    <h3 class="font-black text-slate-900 text-lg">Stock por Categoría</h3>
+                                    <p class="text-xs text-slate-400">Concentración física y alertas en Almacén</p>
+                                </div>
+                                <a href="{{ route('inventory.index') }}" class="text-xs font-bold text-blue-600 hover:underline shrink-0">Explorar &rarr;</a>
+                            </div>
+
+                            <div class="space-y-3.5 max-h-72 overflow-y-auto pr-1">
+                                @forelse($stockPorCategoria as $cat)
+                                    <a href="{{ route('inventory.index', ['category_id' => $cat['category_id']]) }}" class="block group p-2.5 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                                        <div class="flex items-center justify-between gap-2 text-xs mb-1.5">
+                                            <div class="flex items-center gap-2 min-w-0">
+                                                <span class="font-bold text-slate-800 truncate group-hover:text-blue-700">{{ $cat['category_name'] }}</span>
+                                                @if($cat['low_count'] > 0)
+                                                    <span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-black shrink-0">{{ $cat['low_count'] }} alerta(s)</span>
+                                                @endif
+                                            </div>
+                                            <div class="text-right shrink-0">
+                                                <strong class="text-slate-900 font-black">{{ number_format($cat['units_count']) }} und</strong>
+                                                <span class="text-[10px] text-slate-400 ml-1">({{ $cat['pct'] }}%)</span>
+                                            </div>
+                                        </div>
+                                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                            <div class="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full transition-all duration-300" style="width: {{ max($cat['units_count'] > 0 ? 4 : 0, $cat['pct']) }}%"></div>
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 mt-1 block">{{ $cat['skus_count'] }} SKU(s) en catálogo</span>
+                                    </a>
+                                @empty
+                                    <p class="text-xs text-slate-400 text-center py-8">No hay categorías con inventario registrado.</p>
+                                @endforelse
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Traslados recientes y alertas -->
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <h3 class="font-black text-slate-800 text-lg">Últimos Despachos a Sedes</h3>
-                                <p class="text-xs text-slate-400">Mercadería enviada desde Almacén Central</p>
+                <!-- FILA 3: MONITOR DE NECESIDADES POR SEDE -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="font-black text-slate-900 text-lg">Necesidades de Reposición en Sedes</h3>
+                            <p class="text-xs text-slate-400">Quiebres de stock y solicitudes activas por cada punto de venta</p>
+                        </div>
+                        <a href="{{ route('transfers.index') }}" class="text-xs font-bold text-blue-600 hover:underline">Crear o despachar envío &rarr;</a>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @forelse($necesidadesSedes as $sede)
+                            @php
+                                $tieneUrgencia = ($sede['agotados_count'] + $sede['bajo_stock_count']) > 0;
+                            @endphp
+                            <div class="p-4 rounded-xl border {{ $sede['solicitudes_count'] > 0 ? 'border-blue-300 bg-blue-50/20' : ($tieneUrgencia ? 'border-amber-200 bg-amber-50/20' : 'border-slate-200 bg-slate-50/40') }}">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <h4 class="font-black text-slate-900 text-base">{{ $sede['name'] }}</h4>
+                                        <span class="text-[11px] text-slate-500 font-medium">{{ number_format($sede['total_units']) }} unidades en sede</span>
+                                    </div>
+                                    @if($sede['solicitudes_count'] > 0)
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-800">
+                                            {{ $sede['solicitudes_count'] }} pedido(s)
+                                        </span>
+                                    @elseif($sede['en_transito_count'] > 0)
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-800">
+                                            {{ $sede['en_transito_count'] }} en camino
+                                        </span>
+                                    @else
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-600">
+                                            Sin pendientes
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100 text-xs">
+                                    <div class="px-2.5 py-1.5 rounded-lg {{ $sede['agotados_count'] > 0 ? 'bg-rose-50 text-rose-700 border border-rose-100' : 'bg-white text-slate-500 border border-slate-100' }}">
+                                        <span class="block text-[10px] font-bold uppercase">Agotados</span>
+                                        <strong class="text-sm font-black">{{ $sede['agotados_count'] }} SKU</strong>
+                                    </div>
+                                    <div class="px-2.5 py-1.5 rounded-lg {{ $sede['bajo_stock_count'] > 0 ? 'bg-amber-50 text-amber-800 border border-amber-100' : 'bg-white text-slate-500 border border-slate-100' }}">
+                                        <span class="block text-[10px] font-bold uppercase">Stock Bajo</span>
+                                        <strong class="text-sm font-black">{{ $sede['bajo_stock_count'] }} SKU</strong>
+                                    </div>
+                                </div>
                             </div>
-                            <a href="{{ route('transfers.index') }}" class="text-xs font-bold text-blue-600 hover:underline">Ver todos &rarr;</a>
+                        @empty
+                            <p class="text-xs text-slate-400 text-center py-6 col-span-3">No hay sedes comerciales registradas.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                <!-- FILA 4: BANDEJA DE DESPACHOS + ALERTAS URGENTES -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <!-- Bandeja de Solicitudes y Despachos -->
+                    <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 p-6" x-data="{ tab: '{{ $solicitudesPendientesCount > 0 ? 'pending' : 'recent' }}' }">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                            <div>
+                                <h3 class="font-black text-slate-800 text-lg" x-text="tab === 'pending' ? 'Pedidos Pendientes por Despachar' : 'Últimos Despachos a Sedes'"></h3>
+                                <p class="text-xs text-slate-400" x-text="tab === 'pending' ? 'Solicitudes enviadas por tiendas esperando salida de almacén' : 'Historial reciente de traslados en tránsito o recibidos'"></p>
+                            </div>
+
+                            <div class="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 self-start sm:self-auto">
+                                <button
+                                    type="button"
+                                    @click="tab = 'pending'"
+                                    :class="tab === 'pending' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                                    class="px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                                >
+                                    <span>Pendientes</span>
+                                    <span class="px-1.5 py-0.5 rounded-md text-[10px] font-black {{ $solicitudesPendientesCount > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600' }}">{{ $solicitudesPendientesCount }}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="tab = 'recent'"
+                                    :class="tab === 'recent' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                                    class="px-3 py-1 rounded-lg text-xs font-bold transition-all"
+                                >
+                                    Historial
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="space-y-3">
+                        <!-- Lista: Solicitudes Pendientes -->
+                        <div x-show="tab === 'pending'" class="space-y-3">
+                            @forelse($solicitudesPendientes as $sol)
+                                <div class="p-4 rounded-xl border border-amber-200 bg-amber-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="text-xs font-black text-blue-600">Pedido #{{ $sol->id }}</span>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-100 text-amber-800">Solicitado</span>
+                                            <span class="text-xs text-slate-400">&bull; {{ $sol->created_at->format('d/m/Y h:i A') }}</span>
+                                        </div>
+                                        <p class="text-sm font-bold text-slate-800 mt-1">
+                                            Destino: {{ $sol->toLocation->name ?? 'Sede' }}
+                                            @if($sol->requestedBy)
+                                                <span class="text-xs font-normal text-slate-500">(Solicita: {{ $sol->requestedBy->name }})</span>
+                                            @endif
+                                        </p>
+                                        <p class="text-xs text-slate-600 truncate mt-0.5">
+                                            <strong>{{ $sol->items->sum('quantity') }} und:</strong>
+                                            {{ $sol->items->map(fn($i) => $i->quantity.'x '.($i->product->name ?? 'Producto'))->implode(', ') }}
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <a href="{{ route('transfers.picking', $sol->id) }}" target="_blank" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors">
+                                            Hoja Picking
+                                        </a>
+                                        <a href="{{ route('transfers.index') }}" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors">
+                                            Despachar &rarr;
+                                        </a>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="py-10 text-center text-slate-400">
+                                    <p class="text-sm font-bold text-emerald-600">¡Sin pedidos pendientes por despachar!</p>
+                                    <p class="text-xs mt-1">Todas las solicitudes de sedes han sido atendidas.</p>
+                                </div>
+                            @endforelse
+                        </div>
+
+                        <!-- Lista: Despachos Recientes -->
+                        <div x-show="tab === 'recent'" class="space-y-3" style="display: none;">
                             @forelse($transferenciasRecientes as $tr)
-                                <div class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                                    <div>
-                                        <div class="flex items-center gap-2">
+                                @php
+                                    $statusVal = $tr->status instanceof \App\Enums\TransferStatus ? $tr->status->value : (string) $tr->status;
+                                    $statusBadge = match($statusVal) {
+                                        'recibido' => 'bg-emerald-100 text-emerald-800',
+                                        'en_transito' => 'bg-blue-100 text-blue-800',
+                                        'cancelado' => 'bg-rose-100 text-rose-800',
+                                        default => 'bg-slate-100 text-slate-700',
+                                    };
+                                    $statusLabel = $tr->status instanceof \App\Enums\TransferStatus ? $tr->status->label() : ucfirst($statusVal);
+                                @endphp
+                                <div class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
                                             <span class="text-xs font-black text-blue-600">Envío #{{ $tr->id }}</span>
                                             <span class="text-xs text-slate-400">&bull; {{ $tr->created_at->format('d/m/Y h:i A') }}</span>
                                         </div>
-                                        <p class="text-sm font-bold text-slate-800 mt-0.5">Destino: {{ $tr->toLocation->name }}</p>
-                                        <p class="text-xs text-slate-500">{{ $tr->items->sum('quantity') }} unidades enviadas ({{ $tr->items->count() }} ítems)</p>
+                                        <p class="text-sm font-bold text-slate-800 mt-0.5">Destino: {{ $tr->toLocation->name ?? 'Sede' }}</p>
+                                        <p class="text-xs text-slate-500 truncate">{{ $tr->items->sum('quantity') }} unidades enviadas ({{ $tr->items->count() }} ítems)</p>
                                     </div>
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800">
-                                        {{ $tr->status }}
-                                    </span>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase {{ $statusBadge }}">
+                                            {{ $statusLabel }}
+                                        </span>
+                                        <a href="{{ route('transfers.picking', $tr->id) }}" target="_blank" class="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-blue-600 transition-colors" title="Hoja de Picking">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                        </a>
+                                    </div>
                                 </div>
                             @empty
-                                <p class="text-xs text-slate-400 text-center py-6">No hay transferencias recientes registradas.</p>
+                                <p class="text-xs text-slate-400 text-center py-8">No hay transferencias recientes registradas.</p>
                             @endforelse
                         </div>
                     </div>
 
+                    <!-- Alertas Urgentes de Stock en Almacén -->
                     <div class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <h3 class="font-black text-slate-800 text-lg mb-1">Productos por Agotarse en Almacén</h3>
-                        <p class="text-xs text-slate-400 mb-4">Requieren compra a proveedores</p>
+                        <div class="flex items-start justify-between gap-2 mb-4">
+                            <div>
+                                <h3 class="font-black text-slate-800 text-lg">Productos Críticos y Agotados</h3>
+                                <p class="text-xs text-slate-400">Ordenados por urgencia de reposición en Almacén</p>
+                            </div>
+                            <a href="{{ route('inventory.index', ['stock_status' => 'bajo_stock', 'sort' => 'stock_asc']) }}" class="text-xs font-bold text-blue-600 hover:underline shrink-0">Ver todos &rarr;</a>
+                        </div>
 
-                        <div class="space-y-3">
+                        <div class="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
                             @forelse($alertasAlmacen as $al)
-                                <div class="flex items-center justify-between p-3 rounded-xl border border-rose-100 bg-rose-50/30">
-                                    <div>
-                                        <p class="font-bold text-slate-800 text-xs">{{ $al->product->name }}</p>
+                                @php
+                                    $isAgotado = (int) $al->quantity <= 0;
+                                @endphp
+                                <a href="{{ route('inventory.index', ['search' => $al->product->sku]) }}" class="flex items-center justify-between p-3 rounded-xl border {{ $isAgotado ? 'border-rose-200 bg-rose-50/50 hover:bg-rose-50' : 'border-amber-200 bg-amber-50/30 hover:bg-amber-50/60' }} transition-colors group">
+                                    <div class="min-w-0 pr-2">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase {{ $isAgotado ? 'bg-rose-600 text-white' : 'bg-amber-500 text-white' }}">
+                                                {{ $isAgotado ? 'Agotado' : 'Crítico' }}
+                                            </span>
+                                            <span class="font-mono text-[10px] font-bold text-slate-500">{{ $al->product->sku }}</span>
+                                        </div>
+                                        <p class="font-bold text-slate-800 text-xs truncate mt-1 group-hover:text-blue-700">{{ $al->product->name }}</p>
                                         <span class="text-[10px] text-slate-400">{{ $al->product->category->name ?? 'Accesorio' }}</span>
                                     </div>
-                                    <div class="text-right">
-                                        <span class="font-black text-rose-600 text-sm">{{ $al->quantity }} und</span>
+                                    <div class="text-right shrink-0">
+                                        <span class="font-black {{ $isAgotado ? 'text-rose-600' : 'text-amber-700' }} text-sm">{{ $al->quantity }} und</span>
                                         <span class="text-[10px] text-slate-400 block">Mín: {{ $al->min_stock }}</span>
                                     </div>
-                                </div>
+                                </a>
                             @empty
-                                <p class="text-xs text-emerald-600 text-center py-6 font-bold">¡Inventario óptimo en Almacén!</p>
+                                <p class="text-xs text-emerald-600 text-center py-8 font-bold">¡Inventario óptimo en Almacén Central!</p>
                             @endforelse
                         </div>
                     </div>
                 </div>
+
+                <script>
+                    function warehouseDispatchChart(days) {
+                        return {
+                            days: days,
+                            metric: 'units',
+                            hoveredIndex: null,
+
+                            getVal(day) {
+                                return this.metric === 'units' ? Number(day.units) : Number(day.transfers);
+                            },
+
+                            get totalPeriod() {
+                                return this.days.reduce((sum, d) => sum + this.getVal(d), 0);
+                            },
+
+                            get avgPeriod() {
+                                return this.days.length ? this.totalPeriod / this.days.length : 0;
+                            },
+
+                            get maxValue() {
+                                const m = Math.max(...this.days.map(d => this.getVal(d)), 0);
+                                return m > 0 ? m : 1;
+                            },
+
+                            get avgHeightPct() {
+                                if (this.avgPeriod <= 0) return 0;
+                                return Math.min(82, Math.round((this.avgPeriod / this.maxValue) * 82));
+                            },
+
+                            get bestDay() {
+                                if (!this.days.length) return null;
+                                const best = this.days.reduce((b, curr) => this.getVal(curr) > this.getVal(b) ? curr : b, this.days[0]);
+                                return this.getVal(best) > 0 ? best : null;
+                            },
+
+                            get hoveredDay() {
+                                return this.hoveredIndex !== null ? this.days[this.hoveredIndex] : null;
+                            },
+
+                            getBarHeightPct(day) {
+                                const val = this.getVal(day);
+                                if (val <= 0) return 4;
+                                return Math.max(8, Math.round((val / this.maxValue) * 100));
+                            }
+                        };
+                    }
+                </script>
 
             @elseif($user->isVendedor())
                 <!-- ============================================== -->
@@ -372,7 +746,14 @@
                                         </div>
 
                                         @if($enCamino)
-                                            <form action="{{ route('transfers.receive', $pedido->id) }}" method="POST" onsubmit="return confirm('¿Confirmas haber recibido esta mercadería en tu sede?')">
+                                            <form
+                                                action="{{ route('transfers.receive', $pedido->id) }}"
+                                                method="POST"
+                                                data-confirm="¿Confirmas haber recibido esta mercadería en tu sede?"
+                                                data-confirm-title="Confirmar Recepción"
+                                                data-confirm-button="Sí, Recibir"
+                                                data-confirm-tone="emerald"
+                                            >
                                                 @csrf
                                                 <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg shadow-sm whitespace-nowrap">
                                                     Recibir

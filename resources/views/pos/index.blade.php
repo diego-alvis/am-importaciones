@@ -411,13 +411,13 @@
             async submitToServer(method, cash, transfer, changeValue) {
                 for (const item of this.cart) {
                     if (item.requires_device_model && (!item.device_model || item.device_model.trim() === '')) {
-                        alert(`Por favor ingresa el modelo de celular para '${item.name}' antes de continuar.`);
+                        window.uiAlert(`Por favor ingresa el modelo de celular para '${item.name}' antes de continuar.`, 'Modelo Requerido', 'amber');
                         return;
                     }
 
                     const rawDiscount = parseFloat(item.unit_discount);
                     if (!isNaN(rawDiscount) && (rawDiscount < 0 || rawDiscount > item.base_price)) {
-                        alert(`El descuento por unidad de '${item.name}' debe estar entre S/ 0.00 y S/ ${item.base_price.toFixed(2)}.`);
+                        window.uiAlert(`El descuento por unidad de '${item.name}' debe estar entre S/ 0.00 y S/ ${item.base_price.toFixed(2)}.`, 'Descuento Inválido', 'amber');
                         return;
                     }
                 }
@@ -459,10 +459,10 @@
                         this.referenceCode = '';
                         this.showConfirmation = true; // Confirmación sin imprimir automáticamente
                     } else {
-                        alert('Error: ' + data.error);
+                        window.uiAlert(data.error || 'No se pudo registrar la venta.', 'Error en la Venta', 'rose');
                     }
                 } catch (error) {
-                    alert('Fallo de conexión al registrar venta.');
+                    window.uiAlert('Fallo de conexión al intentar registrar la venta.', 'Error de Conexión', 'rose');
                 }
             },
 

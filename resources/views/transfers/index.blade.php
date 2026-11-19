@@ -92,7 +92,15 @@
                             <a href="{{ route('transfers.picking', $pTransf->id) }}" target="_blank" class="px-2.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold text-center" title="Imprimir hoja de alistamiento">
                                 🖨️ Picking
                             </a>
-                            <form action="{{ route('transfers.dispatch', $pTransf->id) }}" method="POST" class="flex-1" onsubmit="return confirm('¿Confirmas que este pedido ha sido alistado y sale despachado hacia {{ $pTransf->toLocation->name }}?')">
+                            <form
+                                action="{{ route('transfers.dispatch', $pTransf->id) }}"
+                                method="POST"
+                                class="flex-1"
+                                data-confirm="¿Confirmas que este pedido ha sido alistado y sale despachado hacia {{ $pTransf->toLocation->name }}?"
+                                data-confirm-title="Despachar Pedido #PED-{{ str_pad($pTransf->id, 5, '0', STR_PAD_LEFT) }}"
+                                data-confirm-button="Alistar y Enviar"
+                                data-confirm-tone="emerald"
+                            >
                                 @csrf
                                 <button type="submit" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors">
                                     ✓ Alistar y Enviar
@@ -187,7 +195,14 @@
                                                 <a href="{{ route('transfers.picking', $transf->id) }}" target="_blank" class="px-2 py-1 border border-slate-200 hover:bg-slate-100 rounded text-[11px] font-bold text-slate-600" title="Imprimir hoja de picking">
                                                     🖨️
                                                 </a>
-                                                <form action="{{ route('transfers.dispatch', $transf->id) }}" method="POST" onsubmit="return confirm('¿Confirmas el despacho de este pedido?')">
+                                                <form
+                                                    action="{{ route('transfers.dispatch', $transf->id) }}"
+                                                    method="POST"
+                                                    data-confirm="¿Confirmas el despacho del pedido #TR-{{ str_pad($transf->id, 5, '0', STR_PAD_LEFT) }} hacia {{ $transf->toLocation->name }}?"
+                                                    data-confirm-title="Despachar Pedido"
+                                                    data-confirm-button="Alistar y Enviar"
+                                                    data-confirm-tone="emerald"
+                                                >
                                                     @csrf
                                                     <button type="submit" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs">
                                                         Alistar y Enviar
@@ -205,7 +220,15 @@
                                         </span>
 
                                         @can('receive', $transf)
-                                            <form action="{{ route('transfers.receive', $transf->id) }}" method="POST" class="mt-2" onsubmit="return confirm('¿Confirmas que la mercadería llegó físicamente a tu tienda?')">
+                                            <form
+                                                action="{{ route('transfers.receive', $transf->id) }}"
+                                                method="POST"
+                                                class="mt-2"
+                                                data-confirm="¿Confirmas que la mercadería del traslado #TR-{{ str_pad($transf->id, 5, '0', STR_PAD_LEFT) }} llegó físicamente a tu tienda?"
+                                                data-confirm-title="Confirmar Recepción"
+                                                data-confirm-button="Sí, Mercadería Recibida"
+                                                data-confirm-tone="emerald"
+                                            >
                                                 @csrf
                                                 <button type="submit" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs flex items-center gap-1 mx-auto">
                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
@@ -229,7 +252,15 @@
 
                                     @can('cancel', $transf)
                                         @if(in_array($statusVal, ['solicitado', 'en_transito']))
-                                            <form action="{{ route('transfers.cancel', $transf->id) }}" method="POST" class="mt-1" onsubmit="return confirm('¿Deseas cancelar esta solicitud/traslado?')">
+                                            <form
+                                                action="{{ route('transfers.cancel', $transf->id) }}"
+                                                method="POST"
+                                                class="mt-1"
+                                                data-confirm="¿Deseas cancelar la solicitud/traslado #TR-{{ str_pad($transf->id, 5, '0', STR_PAD_LEFT) }}?"
+                                                data-confirm-title="Cancelar Solicitud / Traslado"
+                                                data-confirm-button="Sí, Cancelar"
+                                                data-confirm-tone="rose"
+                                            >
                                                 @csrf
                                                 <button type="submit" class="text-[10px] text-red-500 hover:text-red-700 hover:underline">
                                                     Cancelar
@@ -573,7 +604,7 @@
             loadLowStockItems() {
                 const lowItems = this.catalog.filter(p => p.is_low_stock && p.almacen_stock > 0);
                 if (lowItems.length === 0) {
-                    alert('No hay productos con stock bajo en tu tienda que tengan stock disponible en Almacén Central.');
+                    window.uiAlert('No hay productos con stock bajo en tu tienda que tengan stock disponible en Almacén Central.', 'Sin productos sugeridos', 'amber');
                     return;
                 }
 
