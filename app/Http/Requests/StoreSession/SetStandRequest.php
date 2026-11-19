@@ -14,7 +14,7 @@ class SetStandRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'stand_id' => 'required|exists:stands,id',
+            'stand_id' => 'nullable|exists:stands,id',
             'operator_name' => 'nullable|string|max:100',
         ];
     }

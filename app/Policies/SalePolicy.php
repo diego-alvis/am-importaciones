@@ -23,7 +23,11 @@ class SalePolicy
         }
 
         if ($user->isVendedor()) {
-            return (int) $sale->user_id === (int) $user->id;
+            if ((int) $sale->user_id === (int) $user->id) {
+                return true;
+            }
+
+            return $user->hasFixedStand() && (int) $sale->cashSession?->stand_id === (int) $user->stand_id;
         }
 
         return false;

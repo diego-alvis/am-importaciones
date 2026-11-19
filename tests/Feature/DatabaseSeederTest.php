@@ -60,6 +60,7 @@ test('demo seeder builds a usable dataset once', function () {
 
     expect(Product::count())->toBe(36)
         ->and(Stock::count())->toBe(36 * 4)
+        ->and(User::count())->toBe(14)
         ->and(CashSession::where('status', 'abierta')->count())->toBe(1)
         ->and(Sale::count())->toBe(8 + 10 + 12 + 14)
         ->and(Transfer::where('status', 'solicitado')->count())->toBe(1);

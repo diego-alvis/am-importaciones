@@ -17,7 +17,7 @@ class FilterHistoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'date_range' => ['nullable', 'string', 'in:hoy,ayer,semana,mes,personalizado'],
+            'date_range' => ['nullable', 'string', 'in:hoy,ayer,semana,mes,todos,personalizado'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
             'location_id' => ['nullable', 'integer', 'exists:locations,id'],

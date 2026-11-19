@@ -16,7 +16,7 @@
                 <!-- Navigation Links según Rol -->
                 <div class="hidden xl:flex items-center gap-2.5 2xl:gap-4 h-16 shrink-0">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="whitespace-nowrap text-sm font-semibold">
-                        {{ __('Dashboard') }}
+                        {{ auth()->check() && auth()->user()->isVendedor() ? __('Mi Turno') : __('Dashboard') }}
                     </x-nav-link>
                     
                     @if(auth()->check() && !auth()->user()->isAlmacen())
@@ -103,7 +103,7 @@
 
                             @if(!$currentUser->isAlmacen() && $availableStands->count() > 0)
                                 <button type="button" @click="showStoreModal = true" class="w-full text-left px-4 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors">
-                                    Cambiar Tienda / Operador
+                                    {{ $currentUser->hasFixedStand() ? 'Cambiar Operador de Turno' : 'Cambiar Tienda / Operador' }}
                                 </button>
                             @endif
 
@@ -137,7 +137,7 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden xl:hidden bg-white border-t border-slate-100">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
+                {{ auth()->check() && auth()->user()->isVendedor() ? __('Mi Turno') : __('Dashboard') }}
             </x-responsive-nav-link>
 
             @if(auth()->check() && !auth()->user()->isAlmacen())
@@ -186,7 +186,7 @@
                 <div class="text-xs text-slate-500">{{ Auth::user()->email }} ({{ Auth::user()->role }})</div>
                 @if(!Auth::user()->isAlmacen() && Auth::user()->getActiveStand())
                     <button type="button" @click="showStoreModal = true; open = false" class="mt-2 text-xs font-bold text-blue-600 block">
-                        Tienda: {{ Auth::user()->getActiveStand()->name }} (Cambiar &rarr;)
+                        {{ Auth::user()->hasFixedStand() ? 'Stand fijo: ' . Auth::user()->getActiveStand()->name . ' · Cambiar Operador →' : 'Tienda: ' . Auth::user()->getActiveStand()->name . ' (Cambiar →)' }}
                     </button>
                 @endif
             </div>
@@ -208,15 +208,20 @@
     <!-- MODAL GLOBAL: CAMBIAR TIENDA U OPERADOR -->
     @if(auth()->check() && !auth()->user()->isAlmacen())
         @php
-            $mStands = Auth::user()->getAvailableStands();
-            $mActive = Auth::user()->getActiveStand();
+            $mUser = Auth::user();
+            $mStands = $mUser->getAvailableStands();
+            $mActive = $mUser->getActiveStand();
+            $mHasFixedStand = $mUser->hasFixedStand();
+            $mOperatorValue = $mUser->getActiveCashSession()?->operator_name ?: session('operator_name', $mHasFixedStand ? '' : $mUser->display_name);
         @endphp
         <div x-show="showStoreModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" style="display: none;">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden text-left" @click.away="showStoreModal = false">
                 <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                     <div>
-                        <h3 class="font-black text-lg text-slate-800">Seleccionar Tienda / Operador</h3>
-                        <p class="text-xs text-slate-500">Sede: {{ Auth::user()->location->name ?? 'AM Importaciones' }}</p>
+                        <h3 class="font-black text-lg text-slate-800">
+                            {{ $mHasFixedStand ? 'Vendedor / Operador de Turno' : 'Seleccionar Tienda / Operador' }}
+                        </h3>
+                        <p class="text-xs text-slate-500">Sede: {{ $mUser->location->name ?? 'AM Importaciones' }}</p>
                     </div>
                     <button type="button" @click="showStoreModal = false" class="text-slate-400 hover:text-slate-600 font-black text-xl">&times;</button>
                 </div>
@@ -226,21 +231,32 @@
                     <div class="p-6 space-y-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nombre del Vendedor / Operador</label>
-                            <input type="text" name="operator_name" value="{{ Auth::user()->display_name }}" required
+                            <input type="text" name="operator_name" value="{{ $mOperatorValue }}" required placeholder="Ej. María Torres"
                                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
-                            <span class="text-[11px] text-slate-400 block mt-1">Nombre que figurará en el comprobante y arqueo del turno.</span>
+                            <span class="text-[11px] text-slate-400 block mt-1">Nombre que figurará en los tickets, historial y arqueo del turno.</span>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tienda en la que operará hoy</label>
-                            <select name="stand_id" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
-                                @foreach($mStands as $st)
-                                    <option value="{{ $st->id }}" {{ ($mActive?->id == $st->id) ? 'selected' : '' }}>
-                                        {{ $st->name }} &bull; {{ $st->location->name }} (Fondo: S/ {{ number_format($st->base_cash, 2) }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            <span class="text-[11px] text-slate-400 block mt-1">Las tiendas disponibles pertenecen a tu sede autorizada.</span>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                {{ $mHasFixedStand ? 'Stand Fijo Asignado' : 'Tienda en la que operará hoy' }}
+                            </label>
+                            @if($mHasFixedStand && $mActive)
+                                <input type="hidden" name="stand_id" value="{{ $mActive->id }}">
+                                <div class="w-full px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50/70 text-sm font-bold text-blue-900 flex items-center justify-between">
+                                    <span>{{ $mActive->name }} &bull; {{ $mActive->location?->name }}</span>
+                                    <span class="text-[10px] uppercase tracking-wider bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md font-extrabold">Fijo</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 block mt-1">Esta cuenta pertenece exclusivamente a este stand.</span>
+                            @else
+                                <select name="stand_id" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
+                                    @foreach($mStands as $st)
+                                        <option value="{{ $st->id }}" {{ ($mActive?->id == $st->id) ? 'selected' : '' }}>
+                                            {{ $st->name }} &bull; {{ $st->location->name }} (Fondo: S/ {{ number_format($st->base_cash, 2) }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="text-[11px] text-slate-400 block mt-1">Las tiendas disponibles pertenecen a tu sede autorizada.</span>
+                            @endif
                         </div>
                     </div>
 
@@ -249,7 +265,7 @@
                             Cancelar
                         </button>
                         <button type="submit" class="w-2/3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-sm">
-                            Confirmar y Cambiar
+                            {{ $mHasFixedStand ? 'Guardar Operador' : 'Confirmar y Cambiar' }}
                         </button>
                     </div>
                 </form>

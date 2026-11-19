@@ -10,6 +10,7 @@
                     <p class="text-xs text-slate-500 mt-0.5">
                         Sede: <strong class="text-slate-700">{{ auth()->user()->location->name ?? 'General' }}</strong> 
                         &bull; Tienda Activa: <strong class="text-blue-700 font-bold">{{ $activeStand->name ?? 'No asignada' }}</strong>
+                        &bull; Operador: <strong class="text-slate-800">{{ auth()->user()->display_name }}</strong>
                     </p>
                 </div>
 

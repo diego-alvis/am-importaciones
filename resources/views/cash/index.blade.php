@@ -53,13 +53,22 @@
 
                                 <div>
                                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tienda / Stand de Venta</label>
-                                    <select name="stand_id" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-bold text-slate-800 text-sm">
-                                        @foreach($availableStands as $std)
-                                            <option value="{{ $std->id }}" {{ ($activeStand?->id == $std->id) ? 'selected' : '' }}>
-                                                {{ $std->name }} — {{ $std->location?->name }} (Base recomendada: S/ {{ number_format($std->base_cash, 2) }})
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    @if(auth()->user()->hasFixedStand() && $activeStand)
+                                        <input type="hidden" name="stand_id" value="{{ $activeStand->id }}">
+                                        <div class="w-full px-4 py-3 rounded-xl border border-blue-200 bg-blue-50/70 font-bold text-blue-900 text-sm flex items-center justify-between gap-2">
+                                            <span>{{ $activeStand->name }} — {{ $activeStand->location?->name }}</span>
+                                            <span class="text-[10px] uppercase tracking-wider bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md font-extrabold shrink-0">Stand Fijo</span>
+                                        </div>
+                                        <span class="text-[11px] text-slate-400 block mt-1">Base recomendada: S/ {{ number_format($activeStand->base_cash, 2) }}</span>
+                                    @else
+                                        <select name="stand_id" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-bold text-slate-800 text-sm">
+                                            @foreach($availableStands as $std)
+                                                <option value="{{ $std->id }}" {{ ($activeStand?->id == $std->id) ? 'selected' : '' }}>
+                                                    {{ $std->name }} — {{ $std->location?->name }} (Base recomendada: S/ {{ number_format($std->base_cash, 2) }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
                                 </div>
 
                                 <div>

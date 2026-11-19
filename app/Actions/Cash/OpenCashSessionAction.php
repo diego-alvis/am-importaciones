@@ -22,7 +22,14 @@ class OpenCashSessionAction
             throw new DomainException('Ya tienes un turno de caja abierto actualmente.');
         }
 
-        $standId = $data['stand_id'] ?? ($user->getActiveStand()?->id ?: $user->stand_id);
+        if ($user->hasFixedStand()) {
+            if (! empty($data['stand_id']) && (int) $data['stand_id'] !== (int) $user->stand_id) {
+                throw new DomainException('Solo puedes aperturar caja en el stand fijo asignado a tu cuenta.');
+            }
+            $standId = $user->stand_id;
+        } else {
+            $standId = $data['stand_id'] ?? ($user->getActiveStand()?->id ?: $user->stand_id);
+        }
 
         if (! $standId) {
             throw new DomainException('Por favor selecciona la tienda en la que operarás para aperturar la caja.');

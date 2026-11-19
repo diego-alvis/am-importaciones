@@ -22,7 +22,6 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Hash;
 
 /**
  * Datos de demostración para desarrollo: usuarios por rol, clientes,
@@ -37,8 +36,6 @@ class DemoSeeder extends Seeder
      * Semilla fija para que los datos aleatorios sean reproducibles.
      */
     private const RANDOM_SEED = 2026;
-
-    private const DEMO_PASSWORD = 'password123';
 
     /**
      * @var list<string>
@@ -116,7 +113,8 @@ class DemoSeeder extends Seeder
         $laMuela = $this->location(LocationSeeder::SEDE_LA_MUELA);
         $av54 = $this->location(LocationSeeder::SEDE_AV_54);
 
-        $users = $this->createUsers($almacen, $plazaNorte, $laMuela, $av54);
+        $this->call(StandAccountsSeeder::class);
+        $users = $this->loadAccounts();
         $customers = $this->createCustomers();
         $products = $this->createProducts();
 
@@ -136,28 +134,21 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Cuentas genéricas por rol y sede (sin nombres de personas fijos).
+     * Carga las cuentas oficiales por rol y stand sembradas por StandAccountsSeeder.
      *
      * @return array<string, User>
      */
-    private function createUsers(Location $almacen, Location $plazaNorte, Location $laMuela, Location $av54): array
+    private function loadAccounts(): array
     {
-        $password = Hash::make(self::DEMO_PASSWORD);
-
-        $make = fn (string $state, string $name, string $email, Location $location, ?Stand $stand = null): User => User::factory()
-            ->{$state}()
-            ->when($stand, fn ($factory) => $factory->atStand($stand), fn ($factory) => $factory->atLocation($location))
-            ->create(['name' => $name, 'email' => $email, 'password' => $password]);
-
         return [
             'admin' => User::where('email', AdminUserSeeder::ADMIN_EMAIL)->firstOrFail(),
-            'sup_plaza_norte' => $make('encargado', 'Supervisor Plaza Norte', 'supervisor.plazanorte@amimportaciones.com', $plazaNorte, $this->stand($plazaNorte, 'Tienda A-10')),
-            'sup_la_muela' => $make('encargado', 'Supervisor La Muela', 'supervisor.lamuela@amimportaciones.com', $laMuela, $this->stand($laMuela, 'Tienda A-1')),
-            'sup_av54' => $make('encargado', 'Supervisor Av 54', 'supervisor.av54@amimportaciones.com', $av54, $this->stand($av54, 'Tienda Av 54')),
-            'vend_plaza_norte' => $make('vendedor', 'Vendedor Plaza Norte', 'vendedor.plazanorte@amimportaciones.com', $plazaNorte, $this->stand($plazaNorte, 'Tienda A-5')),
-            'vend_la_muela' => $make('vendedor', 'Vendedor La Muela', 'vendedor.lamuela@amimportaciones.com', $laMuela, $this->stand($laMuela, 'Tienda B-1')),
-            'vend_av54' => $make('vendedor', 'Vendedor Av 54', 'vendedor.av54@amimportaciones.com', $av54, $this->stand($av54, 'Tienda Av 54')),
-            'almacenero' => $make('almacenero', 'Encargado de Almacén', 'almacen@amimportaciones.com', $almacen),
+            'sup_plaza_norte' => User::where('email', 'supervisor.plazanorte@amimportaciones.com')->firstOrFail(),
+            'sup_la_muela' => User::where('email', 'supervisor.lamuela@amimportaciones.com')->firstOrFail(),
+            'sup_av54' => User::where('email', 'supervisor.av54@amimportaciones.com')->firstOrFail(),
+            'vend_plaza_norte' => User::where('email', 'plazanorte.a5@amimportaciones.com')->firstOrFail(),
+            'vend_la_muela' => User::where('email', 'lamuela.a1@amimportaciones.com')->firstOrFail(),
+            'vend_av54' => User::where('email', 'supervisor.av54@amimportaciones.com')->firstOrFail(),
+            'almacenero' => User::where('email', 'almacen@amimportaciones.com')->firstOrFail(),
         ];
     }
 
