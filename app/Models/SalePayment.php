@@ -18,9 +18,12 @@ class SalePayment extends Model
         'reference_code',
     ];
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+        ];
+    }
 
     public function sale()
     {

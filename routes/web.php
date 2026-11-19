@@ -23,14 +23,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/tienda/cambiar', [StoreSessionController::class, 'setStand'])->name('tienda.set');
 
     // 2. Terminal Punto de Venta (POS) y Comprobantes
-    Route::prefix('pos')->name('pos.')->group(function () {
+    Route::prefix('pos')->name('pos.')->middleware(['role:admin,encargado,vendedor'])->group(function () {
         Route::get('/', [PosController::class, 'index'])->name('index');
         Route::post('/sale', [PosController::class, 'store'])->name('store');
         Route::get('/ticket/{id}', [PosController::class, 'ticket'])->name('ticket');
     });
 
     // 3. Control de Caja Operativa
-    Route::prefix('caja')->name('cash.')->group(function () {
+    Route::prefix('caja')->name('cash.')->middleware(['role:admin,encargado,vendedor'])->group(function () {
         Route::get('/', [CashController::class, 'index'])->name('index');
         Route::post('/abrir', [CashController::class, 'open'])->name('open');
         Route::post('/cerrar', [CashController::class, 'close'])->name('close');
@@ -51,7 +51,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // 5. Historial y Auditoría de Ventas
-    Route::prefix('historial')->name('history.')->group(function () {
+    Route::prefix('historial')->name('history.')->middleware(['role:admin,encargado,vendedor'])->group(function () {
         Route::get('/', [HistoryController::class, 'index'])->name('index');
         Route::post('/{id}/anular', [HistoryController::class, 'cancel'])
             ->middleware('role:admin,encargado')

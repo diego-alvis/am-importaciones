@@ -176,7 +176,7 @@ test('av54 supervisor can sell on fixed stand and approve own cash closing', fun
         ->post(route('supervisor.aprobar', $session->id))
         ->assertRedirect(route('supervisor.reporte', $session->id));
 
-    expect($session->fresh()->status)->toBe(CashSessionStatus::Aprobada->value)
+    expect($session->fresh()->status)->toBe(CashSessionStatus::Aprobada)
         ->and($session->fresh()->approved_by)->toBe($supAv54->id);
 });
 

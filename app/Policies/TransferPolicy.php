@@ -20,7 +20,7 @@ class TransferPolicy
 
     public function dispatch(User $user, Transfer $transfer): bool
     {
-        if ($user->isAdmin() || $user->isAlmacenero()) {
+        if ($user->isAdmin() || $user->isAlmacen()) {
             return true;
         }
 

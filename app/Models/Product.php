@@ -19,9 +19,12 @@ class Product extends Model
         'base_price',
     ];
 
-    protected $casts = [
-        'base_price' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'base_price' => 'decimal:2',
+        ];
+    }
 
     protected $appends = [
         'requires_device_model',

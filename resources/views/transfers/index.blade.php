@@ -4,14 +4,14 @@
             <div>
                 <h2 class="font-black text-2xl text-slate-800 leading-tight flex items-center gap-2">
                     <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                    @if(auth()->user()->isAlmacenero() || auth()->user()->isAdmin())
+                    @if(auth()->user()->isAlmacen() || auth()->user()->isAdmin())
                         <span>Centro de Despacho y Pedidos de Almacén</span>
                     @else
                         <span>Pedidos de Mercadería a Almacén Central</span>
                     @endif
                 </h2>
                 <p class="text-sm text-slate-500 mt-0.5">
-                    @if(auth()->user()->isAlmacenero() || auth()->user()->isAdmin())
+                    @if(auth()->user()->isAlmacen() || auth()->user()->isAdmin())
                         Atención de solicitudes de stock de tiendas y transferencias entre sedes
                     @else
                         Solicita reposición y abastecimiento de productos para tu sede: <strong class="text-blue-700">{{ auth()->user()->location->name ?? 'Tu Tienda' }}</strong>
@@ -20,14 +20,14 @@
             </div>
 
             <div class="flex items-center gap-2">
-                @if(auth()->user()->isAlmacenero() || auth()->user()->isAdmin())
+                @if(auth()->user()->isAlmacen() || auth()->user()->isAdmin())
                     <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-direct-transfer-modal'))" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm text-sm flex items-center gap-2 transition-all cursor-pointer">
                         <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         <span>+ Traslado Directo</span>
                     </button>
                 @endif
 
-                @if(!auth()->user()->isAlmacenero())
+                @if(!auth()->user()->isAlmacen())
                     <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-order-modal'))" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm text-sm flex items-center gap-2 transition-all cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                         <span>+ Realizar Pedido de Mercadería</span>
@@ -44,7 +44,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             <!-- BANNER DE SOLICITUDES PENDIENTES PARA ALMACÉN Y ADMIN -->
-            @if((auth()->user()->isAlmacenero() || auth()->user()->isAdmin()) && $pendingCount > 0)
+            @if((auth()->user()->isAlmacen() || auth()->user()->isAdmin()) && $pendingCount > 0)
             <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 shadow-xs">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
@@ -118,7 +118,7 @@
                 <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                     <div>
                         <span class="font-bold text-sm text-slate-700">Movimientos, Solicitudes y Envíos de Mercadería</span>
-                        @if(auth()->user()->location && !auth()->user()->isAlmacenero() && !auth()->user()->isAdmin())
+                        @if(auth()->user()->location && !auth()->user()->isAlmacen() && !auth()->user()->isAdmin())
                             <span class="text-xs text-blue-600 ml-2 font-semibold">({{ auth()->user()->location->name }})</span>
                         @endif
                     </div>
@@ -464,7 +464,7 @@
         <!-- ========================================================================= -->
         <!-- MODAL TRASLADO DIRECTO (EXCLUSIVO PARA ALMACÉN Y ADMINISTRADOR)           -->
         <!-- ========================================================================= -->
-        @if(auth()->user()->isAlmacenero() || auth()->user()->isAdmin())
+        @if(auth()->user()->isAlmacen() || auth()->user()->isAdmin())
         <div x-show="showDirectModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" style="display: none;">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden" @click.away="showDirectModal = false">
                 <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">

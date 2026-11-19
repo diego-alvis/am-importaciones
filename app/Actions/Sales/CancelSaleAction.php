@@ -23,7 +23,7 @@ class CancelSaleAction
 
         $sale = Sale::with(['cashSession.stand', 'items'])->findOrFail($saleId);
 
-        if ($sale->status === SaleStatus::Anulada || $sale->status === SaleStatus::Anulada->value) {
+        if ($sale->status === SaleStatus::Anulada) {
             throw new DomainException('Esta venta ya se encuentra anulada.');
         }
 
@@ -31,7 +31,7 @@ class CancelSaleAction
             throw new DomainException('Solo puedes anular ventas correspondientes a tu sede asignada.');
         }
 
-        if ($sale->cashSession && $sale->cashSession->status !== CashSessionStatus::Abierta && $sale->cashSession->status !== CashSessionStatus::Abierta->value) {
+        if ($sale->cashSession && $sale->cashSession->status !== CashSessionStatus::Abierta) {
             throw new DomainException('No se puede anular la venta porque el turno de caja ya fue cerrado o aprobado para arqueo.');
         }
 

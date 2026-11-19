@@ -17,7 +17,7 @@ class ApproveCashSessionAction
     {
         $caja = CashSession::with('stand')->findOrFail($sessionId);
 
-        if ($caja->status !== CashSessionStatus::Precierre && $caja->status !== CashSessionStatus::Precierre->value) {
+        if ($caja->status !== CashSessionStatus::Precierre) {
             throw new DomainException('Solo se pueden aprobar sesiones que estén en estado de precierre.');
         }
 

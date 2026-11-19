@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\SaleStatus;
 use App\Models\CashSession;
 use App\Models\Category;
 use App\Models\Location;
@@ -170,7 +171,7 @@ test('cannot cancel sale if cash session is already closed or approved', functio
         ->post('/historial/'.$sale->id.'/anular');
 
     $response->assertSessionHas('error');
-    expect($sale->fresh()->status)->toBe('completada');
+    expect($sale->fresh()->status)->toBe(SaleStatus::Completada);
 });
 
 test('pos view correctly renders requires_device_model true for micas and cases', function () {

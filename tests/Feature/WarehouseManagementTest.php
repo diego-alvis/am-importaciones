@@ -1,11 +1,16 @@
 <?php
 
+use App\Enums\CashSessionStatus;
 use App\Enums\LocationType;
+use App\Enums\SaleStatus;
 use App\Enums\TransferStatus;
 use App\Enums\UserRole;
+use App\Models\CashSession;
 use App\Models\Category;
 use App\Models\Location;
 use App\Models\Product;
+use App\Models\Sale;
+use App\Models\Stand;
 use App\Models\Stock;
 use App\Models\Transfer;
 use App\Models\TransferItem;
@@ -209,4 +214,58 @@ test('encargado and vendedor cannot create or edit catalog products', function (
             ])
             ->assertForbidden();
     }
+});
+
+test('almacenero cannot access pos, cash, or sales history routes and Sale scope returns empty', function (): void {
+    $stand = Stand::create(['location_id' => $this->sedeNorte->id, 'name' => 'Stand Norte', 'base_cash' => 100]);
+    $session = CashSession::create([
+        'user_id' => $this->vendedor->id,
+        'stand_id' => $stand->id,
+        'expected_cash' => 100,
+        'status' => CashSessionStatus::Abierta,
+    ]);
+    Sale::create([
+        'cash_session_id' => $session->id,
+        'user_id' => $this->vendedor->id,
+        'subtotal_amount' => 45.00,
+        'discount_amount' => 0.00,
+        'total_amount' => 45.00,
+        'status' => SaleStatus::Completada,
+    ]);
+
+    $this->actingAs($this->almacenero)->get(route('pos.index'))->assertForbidden();
+    $this->actingAs($this->almacenero)->get(route('cash.index'))->assertForbidden();
+    $this->actingAs($this->almacenero)->get(route('history.index'))->assertForbidden();
+
+    expect(Sale::query()->forUserScope($this->almacenero)->count())->toBe(0);
+});
+
+test('sale and cash session status attributes cast cleanly to backed enums and compute metrics', function (): void {
+    $stand = Stand::create(['location_id' => $this->sedeNorte->id, 'name' => 'Stand Metrics', 'base_cash' => 100]);
+    $session = CashSession::create([
+        'user_id' => $this->vendedor->id,
+        'stand_id' => $stand->id,
+        'expected_cash' => 100,
+        'status' => 'abierta',
+    ]);
+    $sale = Sale::create([
+        'cash_session_id' => $session->id,
+        'user_id' => $this->vendedor->id,
+        'subtotal_amount' => 50.00,
+        'discount_amount' => 0.00,
+        'total_amount' => 50.00,
+        'status' => 'completada',
+    ]);
+
+    expect($session->fresh()->status)->toBe(CashSessionStatus::Abierta)
+        ->and($sale->fresh()->status)->toBe(SaleStatus::Completada)
+        ->and($session->fresh()->getMetrics()->total_ventas)->toBe(50.0);
+});
+
+test('transfers index renders via TransferService for almacenero', function (): void {
+    $response = $this->actingAs($this->almacenero)->get(route('transfers.index'));
+
+    $response->assertOk()
+        ->assertSee('Centro de Despacho y Pedidos de Almacén')
+        ->assertSee('+ Traslado Directo');
 });

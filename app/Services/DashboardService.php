@@ -551,8 +551,8 @@ class DashboardService
             ->pluck('total', 'cash_sessions.stand_id');
 
         return $allStands->map(function ($stand) use ($ventasHoyPorTienda) {
-            $activeSession = $stand->cashSessions->first(fn ($cs) => $cs->status === CashSessionStatus::Abierta || $cs->status === CashSessionStatus::Abierta->value);
-            $precierreSession = $stand->cashSessions->first(fn ($cs) => $cs->status === CashSessionStatus::Precierre || $cs->status === CashSessionStatus::Precierre->value);
+            $activeSession = $stand->cashSessions->first(fn ($cs) => $cs->status === CashSessionStatus::Abierta);
+            $precierreSession = $stand->cashSessions->first(fn ($cs) => $cs->status === CashSessionStatus::Precierre);
             $ventasHoyTienda = (float) ($ventasHoyPorTienda[$stand->id] ?? 0);
 
             $estado = StandDisplayStatus::Cerrada->value;

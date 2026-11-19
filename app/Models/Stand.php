@@ -18,9 +18,12 @@ class Stand extends Model
         'base_cash',
     ];
 
-    protected $casts = [
-        'base_cash' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'base_cash' => 'decimal:2',
+        ];
+    }
 
     public function location()
     {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CashSessionStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
 use Database\Factories\CashSessionFactory;
@@ -25,12 +26,16 @@ class CashSession extends Model
         'status',
     ];
 
-    protected $casts = [
-        'opening_time' => 'datetime',
-        'closing_time' => 'datetime',
-        'expected_cash' => 'decimal:2',
-        'declared_cash' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'opening_time' => 'datetime',
+            'closing_time' => 'datetime',
+            'expected_cash' => 'decimal:2',
+            'declared_cash' => 'decimal:2',
+            'status' => CashSessionStatus::class,
+        ];
+    }
 
     public function user()
     {
@@ -67,7 +72,7 @@ class CashSession extends Model
      */
     public function getMetrics(): object
     {
-        $sales = $this->sales->where('status', SaleStatus::Completada->value);
+        $sales = $this->sales->where('status', SaleStatus::Completada);
         $totalVentas = (float) $sales->sum('total_amount');
         $totalEfectivo = 0.0;
         $totalYapePlin = 0.0;

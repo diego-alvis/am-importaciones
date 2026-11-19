@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SaleStatus;
 use Database\Factories\SaleFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,11 +25,15 @@ class Sale extends Model
         'status',
     ];
 
-    protected $casts = [
-        'subtotal_amount' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
-        'total_amount' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'subtotal_amount' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
+            'total_amount' => 'decimal:2',
+            'status' => SaleStatus::class,
+        ];
+    }
 
     public function cashSession()
     {
@@ -71,6 +76,10 @@ class Sale extends Model
         ?string $userId = null,
         ?string $scope = null
     ): Builder {
+        if ($user->isAlmacen()) {
+            return $query->whereRaw('1 = 0');
+        }
+
         if ($user->isVendedor()) {
             $activeStand = $user->getActiveStand();
             if ($activeStand) {

@@ -2,9 +2,13 @@
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
+                @php
+                    $isAprobada = $caja->status === \App\Enums\CashSessionStatus::Aprobada;
+                    $cajaStatusLabel = $caja->status instanceof \App\Enums\CashSessionStatus ? $caja->status->label() : ucfirst((string) $caja->status);
+                @endphp
                 <div class="flex items-center gap-2">
-                    <span class="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded {{ $caja->status === 'aprobada' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                        Turno {{ ucfirst($caja->status) }}
+                    <span class="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded {{ $isAprobada ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                        Turno {{ $cajaStatusLabel }}
                     </span>
                     <span class="text-xs text-slate-500 font-bold">Caja #{{ $caja->id }}</span>
                 </div>
@@ -53,8 +57,8 @@
                         <p class="text-xs text-slate-500">Documento de control interno y auditoría comercial</p>
                     </div>
                     <div class="text-left md:text-right">
-                        <span class="inline-block px-3 py-1 rounded-full text-xs font-bold {{ $caja->status === 'aprobada' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                            ESTADO: {{ strtoupper($caja->status) }}
+                        <span class="inline-block px-3 py-1 rounded-full text-xs font-bold {{ $isAprobada ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                            ESTADO: {{ strtoupper($cajaStatusLabel) }}
                         </span>
                         <p class="text-xs text-slate-400 mt-1">Generado: {{ now()->format('d/m/Y h:i A') }}</p>
                     </div>
@@ -92,7 +96,7 @@
                     </div>
                     <div>
                         <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Transacciones Realizadas</span>
-                        <span class="font-black text-slate-900">{{ $caja->sales->where('status', 'completada')->count() }} ventas</span>
+                        <span class="font-black text-slate-900">{{ $caja->sales->where('status', \App\Enums\SaleStatus::Completada)->count() }} ventas</span>
                     </div>
                 </div>
             </div>

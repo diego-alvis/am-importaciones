@@ -22,12 +22,15 @@ class SaleItem extends Model
         'unit_price',
     ];
 
-    protected $casts = [
-        'original_price' => 'decimal:2',
-        'unit_discount' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
-        'unit_price' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'original_price' => 'decimal:2',
+            'unit_discount' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
+            'unit_price' => 'decimal:2',
+        ];
+    }
 
     public function sale()
     {
