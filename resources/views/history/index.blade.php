@@ -59,10 +59,10 @@
             <!-- BARRA DE FILTROS AVANZADOS -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                 <form method="GET" action="{{ route('history.index') }}" class="space-y-4">
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap xl:flex-nowrap lg:items-end gap-3">
                         
                         <!-- Rango Fecha -->
-                        <div>
+                        <div class="lg:flex-1 lg:min-w-[130px]">
                             <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Periodo</label>
                             <select name="date_range" x-model="dateRange" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold focus:ring-2 focus:ring-blue-500 bg-white">
                                 <option value="hoy">Hoy</option>
@@ -76,7 +76,7 @@
 
                         @if(auth()->user()->isAdmin())
                             <!-- Filtro Sede (Solo Admin) -->
-                            <div>
+                            <div class="lg:flex-1 lg:min-w-[140px]">
                                 <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Sede</label>
                                 <select name="location_id" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold focus:ring-2 focus:ring-blue-500 bg-white">
                                     <option value="">Todas las sedes</option>
@@ -88,7 +88,7 @@
                         @endif
 
                         <!-- Filtro Tienda / Stand -->
-                        <div>
+                        <div class="lg:flex-1 lg:min-w-[150px]">
                             <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Tienda / Stand</label>
                             <select name="stand_id" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold focus:ring-2 focus:ring-blue-500 bg-white">
                                 <option value="">Todas las tiendas</option>
@@ -102,7 +102,7 @@
 
                         @if(auth()->user()->isEncargado())
                             <!-- Filtro Alcance para Supervisor -->
-                            <div>
+                            <div class="lg:flex-1 lg:min-w-[150px]">
                                 <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Alcance</label>
                                 <select name="scope" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold focus:ring-2 focus:ring-blue-500 bg-white">
                                     <option value="" {{ empty($scope) ? 'selected' : '' }}>Toda mi Sede</option>
@@ -111,7 +111,7 @@
                             </div>
                         @elseif(auth()->user()->isAdmin())
                             <!-- Filtro Vendedor (Solo Admin) -->
-                            <div>
+                            <div class="lg:flex-1 lg:min-w-[150px]">
                                 <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Vendedor</label>
                                 <select name="user_id" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold focus:ring-2 focus:ring-blue-500 bg-white">
                                     <option value="">Todos los vendedores</option>
@@ -123,7 +123,7 @@
                         @endif
 
                         <!-- Método de Pago -->
-                        <div>
+                        <div class="lg:flex-1 lg:min-w-[130px]">
                             <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Método de Pago</label>
                             <select name="payment_method" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold focus:ring-2 focus:ring-blue-500 bg-white">
                                 <option value="">Todos</option>
@@ -134,20 +134,22 @@
                             </select>
                         </div>
 
-                        <!-- Estado y Botón -->
-                        <div class="flex items-end gap-1">
-                            <div class="flex-1">
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Estado</label>
-                                <select name="status" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold focus:ring-2 focus:ring-blue-500 bg-white">
-                                    <option value="completada" {{ $status === 'completada' ? 'selected' : '' }}>Completadas</option>
-                                    <option value="anulada" {{ $status === 'anulada' ? 'selected' : '' }}>Anuladas</option>
-                                    <option value="todos" {{ $status === 'todos' ? 'selected' : '' }}>Todos</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-sm">
+                        <!-- Estado -->
+                        <div class="lg:flex-1 lg:min-w-[140px]">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Estado</label>
+                            <select name="status" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="completada" {{ $status === 'completada' ? 'selected' : '' }}>Completadas</option>
+                                <option value="anulada" {{ $status === 'anulada' ? 'selected' : '' }}>Anuladas</option>
+                                <option value="todos" {{ $status === 'todos' ? 'selected' : '' }}>Todos</option>
+                            </select>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="col-span-2 sm:col-span-3 lg:col-span-1 flex items-end gap-1.5 shrink-0">
+                            <button type="submit" class="flex-1 lg:flex-none bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all shadow-sm whitespace-nowrap">
                                 Filtrar
                             </button>
-                            <a href="{{ route('history.index') }}" class="p-2.5 text-slate-400 hover:text-red-500 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" title="Limpiar filtros">
+                            <a href="{{ route('history.index') }}" class="p-2.5 text-slate-400 hover:text-red-500 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shrink-0" title="Limpiar filtros">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </a>
                         </div>
@@ -210,6 +212,11 @@
                                 </td>
                                 <td class="py-3 px-4 text-right font-black text-slate-900 text-sm">
                                     S/ {{ number_format($sale->total_amount, 2) }}
+                                    @if((float) ($sale->discount_amount ?? 0) > 0)
+                                        <span class="block text-[10px] font-bold text-emerald-600">
+                                            Desc: -S/ {{ number_format($sale->discount_amount, 2) }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="py-3 px-4 text-center">
                                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase {{ $sale->status === 'completada' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
@@ -272,7 +279,7 @@
                         <h3 class="font-bold text-lg text-slate-800">
                             Detalle de Venta #<span x-text="selectedSale.id ? String(selectedSale.id).padStart(6, '0') : ''"></span>
                         </h3>
-                        <p class="text-xs text-slate-400" x-text="'Atendido por: ' + (selectedSale.user ? selectedSale.user.name : '')"></p>
+                        <p class="text-xs text-slate-400" x-text="'Atendido por: ' + (selectedSale.operator_name || (selectedSale.user ? selectedSale.user.name : ''))"></p>
                     </div>
                     <button @click="showDetail = false" class="text-slate-400 hover:text-red-500 text-xl font-bold">&times;</button>
                 </div>
@@ -290,6 +297,9 @@
                                             <span class="text-[10px] text-blue-600 block" x-text="'Modelo: ' + item.device_model"></span>
                                         </template>
                                         <span class="text-slate-400" x-text="item.quantity + ' und x S/ ' + parseFloat(item.unit_price).toFixed(2)"></span>
+                                        <template x-if="parseFloat(item.unit_discount || 0) > 0">
+                                            <span class="block text-[10px] font-bold text-emerald-600" x-text="'Antes S/ ' + parseFloat(item.original_price || item.unit_price).toFixed(2) + ' · Desc: -S/ ' + parseFloat(item.unit_discount).toFixed(2) + ' c/u'"></span>
+                                        </template>
                                     </div>
                                     <span class="font-black text-slate-800 text-sm" x-text="'S/ ' + (item.quantity * item.unit_price).toFixed(2)"></span>
                                 </div>
@@ -311,9 +321,23 @@
                     </div>
 
                     <!-- Resumen Total -->
-                    <div class="pt-3 border-t border-slate-200 flex justify-between items-center">
-                        <span class="font-bold text-sm text-slate-700">TOTAL PAGADO</span>
-                        <span class="font-black text-2xl text-blue-600" x-text="'S/ ' + (selectedSale.total_amount ? parseFloat(selectedSale.total_amount).toFixed(2) : '0.00')"></span>
+                    <div class="pt-3 border-t border-slate-200 space-y-1.5">
+                        <template x-if="parseFloat(selectedSale.discount_amount || 0) > 0">
+                            <div class="space-y-1 text-xs pb-1.5 border-b border-slate-100">
+                                <div class="flex justify-between items-center text-slate-500">
+                                    <span>Subtotal</span>
+                                    <span class="font-bold" x-text="'S/ ' + parseFloat(selectedSale.subtotal_amount || 0).toFixed(2)"></span>
+                                </div>
+                                <div class="flex justify-between items-center text-emerald-600 font-bold">
+                                    <span>Descuento total</span>
+                                    <span x-text="'- S/ ' + parseFloat(selectedSale.discount_amount || 0).toFixed(2)"></span>
+                                </div>
+                            </div>
+                        </template>
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-sm text-slate-700">TOTAL PAGADO</span>
+                            <span class="font-black text-2xl text-blue-600" x-text="'S/ ' + (selectedSale.total_amount ? parseFloat(selectedSale.total_amount).toFixed(2) : '0.00')"></span>
+                        </div>
                     </div>
                 </div>
 

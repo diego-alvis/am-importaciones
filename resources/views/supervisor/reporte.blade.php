@@ -239,7 +239,14 @@
                                         @endif
                                     </td>
                                     <td class="px-5 py-3 text-center font-black text-slate-900">{{ $item['quantity'] }}</td>
-                                    <td class="px-5 py-3 text-right font-medium text-slate-600">S/ {{ number_format($item['unit_price'], 2) }}</td>
+                                    <td class="px-5 py-3 text-right font-medium text-slate-600">
+                                        S/ {{ number_format($item['unit_price'], 2) }}
+                                        @if(($item['unit_discount'] ?? 0) > 0)
+                                            <span class="block text-[10px] text-emerald-600 font-bold">
+                                                Reg: S/ {{ number_format($item['original_price'], 2) }} (-S/ {{ number_format($item['unit_discount'], 2) }})
+                                            </span>
+                                        @endif
+                                    </td>
                                     <td class="px-5 py-3 text-right font-black text-slate-900">S/ {{ number_format($item['total'], 2) }}</td>
                                     <td class="px-5 py-3 text-center">
                                         <div class="flex flex-wrap gap-1 justify-center">

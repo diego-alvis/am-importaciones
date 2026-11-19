@@ -16,10 +16,16 @@ class SaleItem extends Model
         'product_id',
         'device_model',
         'quantity',
+        'original_price',
+        'unit_discount',
+        'discount_amount',
         'unit_price',
     ];
 
     protected $casts = [
+        'original_price' => 'decimal:2',
+        'unit_discount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'unit_price' => 'decimal:2',
     ];
 

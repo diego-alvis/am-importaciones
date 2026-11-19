@@ -24,6 +24,9 @@ class SaleItemFactory extends Factory
             'product_id' => Product::factory(),
             'device_model' => null,
             'quantity' => fake()->numberBetween(1, 3),
+            'original_price' => fn (array $attributes) => $attributes['unit_price'],
+            'unit_discount' => 0.00,
+            'discount_amount' => 0.00,
             'unit_price' => fake()->randomFloat(2, 5, 100),
         ];
     }

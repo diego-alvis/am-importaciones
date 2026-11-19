@@ -119,25 +119,50 @@
                     </div>
 
                     <template x-for="(item, index) in cart" :key="index">
-                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative group">
+                        <div class="p-3 bg-slate-50 border rounded-xl relative group transition-colors" :class="parseDiscount(item) > 0 ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200'">
                             <button x-on:click="removeFromCart(index)" class="absolute -right-2 -top-2 bg-red-100 text-red-600 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                             
-                            <div class="flex justify-between items-start gap-2 mb-2">
-                                <span class="font-bold text-xs text-slate-800 leading-tight" x-text="item.name"></span>
-                                <span class="font-black text-xs text-slate-900 shrink-0" x-text="'S/ ' + (item.price * item.quantity).toFixed(2)"></span>
+                            <div class="flex justify-between items-start gap-2">
+                                <div class="min-w-0">
+                                    <span class="font-bold text-xs text-slate-800 leading-tight block" x-text="item.name"></span>
+                                    <div class="flex items-center gap-1.5 mt-0.5 text-[11px]">
+                                        <template x-if="parseDiscount(item) > 0">
+                                            <span class="line-through text-slate-400" x-text="'S/ ' + item.base_price.toFixed(2)"></span>
+                                        </template>
+                                        <span class="font-bold" :class="parseDiscount(item) > 0 ? 'text-emerald-600' : 'text-slate-500'" x-text="'S/ ' + getEffectivePrice(item).toFixed(2) + ' c/u'"></span>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <template x-if="parseDiscount(item) > 0">
+                                        <span class="block text-[10px] line-through text-slate-400" x-text="'S/ ' + (item.base_price * item.quantity).toFixed(2)"></span>
+                                    </template>
+                                    <span class="font-black text-xs text-slate-900" x-text="'S/ ' + (getEffectivePrice(item) * item.quantity).toFixed(2)"></span>
+                                </div>
                             </div>
 
-                            <div class="flex justify-between items-center gap-2 mt-2">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-slate-200/70">
                                 <!-- Campo de Modelo de Celular: SOLO habilitado para Micas y Cases -->
                                 <template x-if="item.requires_device_model">
-                                    <input type="text" x-model="item.device_model" placeholder="Modelo (Ej. iPhone 13)" class="text-xs px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50/70 focus:outline-none focus:ring-1 focus:ring-blue-500 text-blue-900 placeholder-blue-400 font-medium w-36">
-                                </template>
-                                <template x-if="!item.requires_device_model">
-                                    <span class="text-[10px] text-slate-400 italic">No requiere modelo</span>
+                                    <input type="text" x-model="item.device_model" placeholder="Modelo (Ej. iPhone 13)" class="text-xs px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50/70 focus:outline-none focus:ring-1 focus:ring-blue-500 text-blue-900 placeholder-blue-400 font-medium w-full sm:w-36">
                                 </template>
 
+                                <!-- Descuento por unidad en Soles -->
+                                <div class="flex items-center gap-1 bg-white border rounded-lg px-2 py-1 shadow-sm" :class="parseDiscount(item) > 0 ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-slate-200'">
+                                    <span class="text-[10px] font-bold text-slate-500 whitespace-nowrap" title="Descuento por cada unidad">Desc/u S/</span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        :max="item.base_price"
+                                        step="0.50"
+                                        x-model.number="item.unit_discount"
+                                        @blur="sanitizeDiscount(index)"
+                                        placeholder="0.00"
+                                        class="w-14 p-0 border-0 text-xs font-black text-right text-slate-800 focus:ring-0 bg-transparent"
+                                    >
+                                </div>
+
                                 <!-- Contador de Cantidad -->
-                                <div class="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                                <div class="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm ml-auto">
                                     <button x-on:click="updateQuantity(index, -1)" class="w-7 h-7 text-slate-600 hover:bg-slate-100 font-bold text-xs transition-colors">-</button>
                                     <span class="w-7 text-center text-xs font-black text-slate-800" x-text="item.quantity"></span>
                                     <button x-on:click="updateQuantity(index, 1)" class="w-7 h-7 text-slate-600 hover:bg-slate-100 font-bold text-xs transition-colors">+</button>
@@ -149,6 +174,17 @@
 
                 <!-- Footer y Cobro -->
                 <div class="p-4 bg-slate-50 border-t border-slate-200 rounded-b-2xl shrink-0">
+                    <div x-show="totalDiscount > 0" class="space-y-1 mb-2 pb-2 border-b border-slate-200/80 text-xs">
+                        <div class="flex justify-between items-center text-slate-500">
+                            <span>Subtotal</span>
+                            <span class="font-bold" x-text="'S/ ' + subtotal.toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between items-center text-emerald-600 font-bold">
+                            <span>Descuento aplicado</span>
+                            <span x-text="'- S/ ' + totalDiscount.toFixed(2)"></span>
+                        </div>
+                    </div>
+
                     <div class="flex justify-between items-center mb-4">
                         <span class="text-slate-500 font-bold uppercase text-xs tracking-wider">Total a Cobrar</span>
                         <span class="text-3xl font-black text-blue-600" x-text="'S/ ' + total.toFixed(2)"></span>
@@ -297,8 +333,35 @@
             payTransfer: 0,
             referenceCode: '',
 
+            parseDiscount(item) {
+                const raw = parseFloat(item.unit_discount);
+                if (isNaN(raw) || raw < 0) return 0;
+                return Math.min(Math.round(raw * 100) / 100, item.base_price);
+            },
+
+            getEffectivePrice(item) {
+                const price = item.base_price - this.parseDiscount(item);
+                return Math.max(0, Math.round(price * 100) / 100);
+            },
+
+            sanitizeDiscount(index) {
+                if (!this.cart[index]) return;
+                this.cart[index].unit_discount = this.parseDiscount(this.cart[index]);
+            },
+
+            get subtotal() {
+                const val = this.cart.reduce((sum, item) => sum + (item.base_price * item.quantity), 0);
+                return Math.round(val * 100) / 100;
+            },
+
+            get totalDiscount() {
+                const val = this.cart.reduce((sum, item) => sum + (this.parseDiscount(item) * item.quantity), 0);
+                return Math.round(val * 100) / 100;
+            },
+
             get total() {
-                return this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                const val = this.cart.reduce((sum, item) => sum + (this.getEffectivePrice(item) * item.quantity), 0);
+                return Math.round(val * 100) / 100;
             },
 
             get change() {
@@ -319,7 +382,8 @@
                     this.cart.push({
                         id: product.id,
                         name: product.name,
-                        price: parseFloat(product.price),
+                        base_price: parseFloat(product.price),
+                        unit_discount: 0,
                         requires_device_model: product.requires_device_model,
                         quantity: 1,
                         device_model: ''
@@ -349,7 +413,21 @@
                         alert(`Por favor ingresa el modelo de celular para '${item.name}' antes de continuar.`);
                         return;
                     }
+
+                    const rawDiscount = parseFloat(item.unit_discount);
+                    if (!isNaN(rawDiscount) && (rawDiscount < 0 || rawDiscount > item.base_price)) {
+                        alert(`El descuento por unidad de '${item.name}' debe estar entre S/ 0.00 y S/ ${item.base_price.toFixed(2)}.`);
+                        return;
+                    }
                 }
+
+                const payloadCart = this.cart.map(item => ({
+                    id: item.id,
+                    quantity: item.quantity,
+                    price: this.getEffectivePrice(item),
+                    unit_discount: this.parseDiscount(item),
+                    device_model: item.device_model
+                }));
 
                 try {
                     const response = await fetch('{{ route('pos.store') }}', {
@@ -359,7 +437,7 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         },
                         body: JSON.stringify({
-                            cart: this.cart,
+                            cart: payloadCart,
                             total: this.total,
                             payment_method: method,
                             cash_tendered: cash,

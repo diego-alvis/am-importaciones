@@ -24,6 +24,8 @@ class SaleFactory extends Factory
             'user_id' => fn (array $attributes) => CashSession::find($attributes['cash_session_id'])->user_id,
             'operator_name' => fn (array $attributes) => CashSession::find($attributes['cash_session_id'])->operator_name,
             'customer_id' => null,
+            'subtotal_amount' => fn (array $attributes) => $attributes['total_amount'],
+            'discount_amount' => 0.00,
             'total_amount' => fake()->randomFloat(2, 10, 200),
             'status' => SaleStatus::Completada->value,
         ];

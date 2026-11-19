@@ -57,6 +57,9 @@
                         @if($item->device_model)
                         <br><small>Mod: {{ $item->device_model }}</small>
                         @endif
+                        @if((float) ($item->unit_discount ?? 0) > 0)
+                        <br><small>Reg: S/ {{ number_format($item->original_price, 2) }} | Desc: -S/ {{ number_format($item->unit_discount, 2) }} c/u</small>
+                        @endif
                     </td>
                     <td class="text-right">S/ {{ number_format($item->quantity * $item->unit_price, 2) }}</td>
                 </tr>
@@ -67,6 +70,16 @@
         <div class="divider"></div>
 
         <table class="totals-table font-bold">
+            @if((float) ($sale->discount_amount ?? 0) > 0)
+            <tr>
+                <td style="font-weight: normal;">SUBTOTAL:</td>
+                <td class="text-right" style="font-weight: normal;">S/ {{ number_format($sale->subtotal_amount ?? ($sale->total_amount + $sale->discount_amount), 2) }}</td>
+            </tr>
+            <tr>
+                <td style="font-weight: normal;">DESCUENTO:</td>
+                <td class="text-right" style="font-weight: normal;">- S/ {{ number_format($sale->discount_amount, 2) }}</td>
+            </tr>
+            @endif
             <tr>
                 <td>TOTAL A PAGAR:</td>
                 <td class="text-right">S/ {{ number_format($sale->total_amount, 2) }}</td>

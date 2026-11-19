@@ -179,3 +179,156 @@ test('pos view correctly renders requires_device_model true for micas and cases'
     $response->assertSee('requires_device_model: true');
     $response->assertSee('requires_device_model: false');
 });
+
+test('pos registers sale with per unit discount and tracks original price and discount audit', function () {
+    $cashSession = CashSession::create([
+        'user_id' => $this->vendedor->id,
+        'stand_id' => $this->stand->id,
+        'operator_name' => 'Vendedor Descuento',
+        'expected_cash' => 100,
+        'status' => 'abierta',
+    ]);
+
+    // 2 fundas (base_price 25.00 c/u) con descuento de S/ 5.00 por unidad -> S/ 20.00 c/u = S/ 40.00
+    $response = $this->actingAs($this->vendedor)
+        ->postJson('/pos/sale', [
+            'cart' => [
+                [
+                    'id' => $this->productCase->id,
+                    'quantity' => 2,
+                    'unit_discount' => 5.00,
+                    'device_model' => 'iPhone 15',
+                ],
+            ],
+            'total' => 40.00,
+            'payment_method' => 'Efectivo',
+        ]);
+
+    $response->assertOk()
+        ->assertJson(['success' => true, 'total' => 40.00]);
+
+    $sale = Sale::with(['items', 'payments'])->latest()->first();
+    expect((float) $sale->subtotal_amount)->toBe(50.00)
+        ->and((float) $sale->discount_amount)->toBe(10.00)
+        ->and((float) $sale->total_amount)->toBe(40.00);
+
+    $item = $sale->items->first();
+    expect((float) $item->original_price)->toBe(25.00)
+        ->and((float) $item->unit_discount)->toBe(5.00)
+        ->and((float) $item->discount_amount)->toBe(10.00)
+        ->and((float) $item->unit_price)->toBe(20.00);
+
+    expect((float) $sale->payments->first()->amount)->toBe(40.00);
+    expect((float) $cashSession->fresh()->getMetrics()->total_ventas)->toBe(40.00);
+});
+
+test('pos allows free courtesy discount equal to base price', function () {
+    CashSession::create([
+        'user_id' => $this->vendedor->id,
+        'stand_id' => $this->stand->id,
+        'expected_cash' => 100,
+        'status' => 'abierta',
+    ]);
+
+    $response = $this->actingAs($this->vendedor)
+        ->postJson('/pos/sale', [
+            'cart' => [
+                [
+                    'id' => $this->productCharger->id,
+                    'quantity' => 1,
+                    'unit_discount' => 30.00,
+                ],
+            ],
+            'total' => 0.00,
+            'payment_method' => 'Efectivo',
+        ]);
+
+    $response->assertOk()
+        ->assertJson(['success' => true, 'total' => 0]);
+
+    $sale = Sale::latest()->first();
+    expect((float) $sale->subtotal_amount)->toBe(30.00)
+        ->and((float) $sale->discount_amount)->toBe(30.00)
+        ->and((float) $sale->total_amount)->toBe(0.00)
+        ->and($this->stockCharger->fresh()->quantity)->toBe(1);
+});
+
+test('pos rejects unit discount exceeding base price or tampered client price', function () {
+    CashSession::create([
+        'user_id' => $this->vendedor->id,
+        'stand_id' => $this->stand->id,
+        'expected_cash' => 100,
+        'status' => 'abierta',
+    ]);
+
+    // Descuento mayor al precio base (30.00)
+    $this->actingAs($this->vendedor)
+        ->postJson('/pos/sale', [
+            'cart' => [
+                [
+                    'id' => $this->productCharger->id,
+                    'quantity' => 1,
+                    'unit_discount' => 35.00,
+                ],
+            ],
+            'total' => 0.00,
+            'payment_method' => 'Efectivo',
+        ])
+        ->assertStatus(422)
+        ->assertJson(['success' => false]);
+
+    // Manipulación de precio sin descuento válido
+    $this->actingAs($this->vendedor)
+        ->postJson('/pos/sale', [
+            'cart' => [
+                [
+                    'id' => $this->productCharger->id,
+                    'quantity' => 1,
+                    'price' => 1.00,
+                    'unit_discount' => 0,
+                ],
+            ],
+            'total' => 1.00,
+            'payment_method' => 'Efectivo',
+        ])
+        ->assertStatus(422)
+        ->assertJson(['success' => false]);
+
+    expect($this->stockCharger->fresh()->quantity)->toBe(2);
+});
+
+test('pos groups same product with different discounts separately in cash session summary and validates combined stock', function () {
+    $cashSession = CashSession::create([
+        'user_id' => $this->vendedor->id,
+        'stand_id' => $this->stand->id,
+        'expected_cash' => 100,
+        'status' => 'abierta',
+    ]);
+
+    // Stock cargador = 2. Intentar vender 2 en dos líneas (2 + 1 = 3 > 2) debe fallar
+    $this->actingAs($this->vendedor)
+        ->postJson('/pos/sale', [
+            'cart' => [
+                ['id' => $this->productCharger->id, 'quantity' => 2, 'unit_discount' => 0],
+                ['id' => $this->productCharger->id, 'quantity' => 1, 'unit_discount' => 5],
+            ],
+            'total' => 85.00,
+            'payment_method' => 'Efectivo',
+        ])
+        ->assertStatus(422);
+
+    // Venta válida: 1 sin descuento (30) + 1 con descuento S/ 5 (25) = 55
+    $this->actingAs($this->vendedor)
+        ->postJson('/pos/sale', [
+            'cart' => [
+                ['id' => $this->productCharger->id, 'quantity' => 1, 'unit_discount' => 0],
+                ['id' => $this->productCharger->id, 'quantity' => 1, 'unit_discount' => 5],
+            ],
+            'total' => 55.00,
+            'payment_method' => 'Efectivo',
+        ])
+        ->assertOk();
+
+    $summary = $cashSession->fresh()->getItemsSummary();
+    expect($summary)->toHaveCount(2);
+});

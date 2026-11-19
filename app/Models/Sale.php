@@ -18,11 +18,15 @@ class Sale extends Model
         'user_id',
         'operator_name',
         'customer_id',
+        'subtotal_amount',
+        'discount_amount',
         'total_amount',
         'status',
     ];
 
     protected $casts = [
+        'subtotal_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
     ];
 

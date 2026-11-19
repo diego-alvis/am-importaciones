@@ -119,12 +119,15 @@ class CashSession extends Model
         foreach ($sales as $sale) {
             $paymentMethods = $sale->payments->pluck('payment_method')->map(fn ($m) => ucfirst($m))->implode(', ');
             foreach ($sale->items as $item) {
-                $key = $item->product_id.'_'.($item->device_model ?? '');
+                $unitPriceKey = number_format((float) $item->unit_price, 2, '.', '');
+                $key = $item->product_id.'_'.($item->device_model ?? '').'_'.$unitPriceKey;
                 if (! isset($summary[$key])) {
                     $summary[$key] = [
                         'sku' => $item->product->sku ?? '',
                         'name' => $item->product->name ?? 'Producto',
                         'device_model' => $item->device_model,
+                        'original_price' => (float) ($item->original_price ?? $item->unit_price),
+                        'unit_discount' => (float) ($item->unit_discount ?? 0),
                         'unit_price' => (float) $item->unit_price,
                         'quantity' => 0,
                         'total' => 0.0,
